@@ -1,7 +1,26 @@
 
 import numpy as np
 
-class LagrangeBasis1D(object):
+class Basis1D(object):
+    
+    def eval_ref(self, coeffs, ref, d=0):
+        
+        do_ravel = coeffs.ndim==1
+        if do_ravel:
+            coeffs = coeffs.reshape((1,-1))
+        
+        res = np.zeros((coeffs.shape[0], 
+                        len(ref)))
+        
+        polys = self.basis_polys[d]    
+        for i in range(self.q):
+            y = polys[i](ref)
+            res += coeffs[:,i].reshape((-1,1))*y
+            
+        if do_ravel: return res.ravel()
+        return res
+
+class LagrangeBasis1D(Basis1D):
     
     def __init__(self, order):
         self.order = order
@@ -33,21 +52,3 @@ class LagrangeBasis1D(object):
         self.n_dofs_per_node = 1
         self.n_dofs_per_center = len(self.center_dofs)
         self.n_nodes_per_elem = 2
-        
-    def eval_ref(self, coeffs, ref, d=0):
-        
-        do_ravel = coeffs.ndim==1
-        if do_ravel:
-            coeffs = coeffs.reshape((1,-1))
-        
-        res = np.zeros((coeffs.shape[0], 
-                        len(ref)))
-        
-        polys = self.basis_polys[d]    
-        for i in range(self.q):
-            y = polys[i](ref)
-            res += coeffs[:,i].reshape((-1,1))*y
-            
-        if do_ravel: return res.ravel()
-        return res
-            
