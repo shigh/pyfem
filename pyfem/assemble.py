@@ -40,7 +40,7 @@ def simple_build_rhs(topo, basis, mesh, f):
     rhs = np.zeros(mesh.n_dofs, dtype=np.double)
     
     cub_points, cub_weights = topo.get_quadrature(basis.order+1)
-    quad_points = topo.ref_to_phys(mesh.nodes[mesh.elem_to_node],
+    quad_points = topo.ref_to_phys(mesh.vertices[mesh.elem_to_vertex],
                                    cub_points)
     f_quad = f(quad_points)
     cub_vals = basis.eval_ref(np.eye(basis.n_dofs),
