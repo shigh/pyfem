@@ -29,11 +29,11 @@ class Mesh1D(object):
         vertex_dofs = basis.vertex_dofs.ravel()
         elem_to_dof[:,vertex_dofs] = vertex_to_dof[elem_to_vertex]
         
-        n_center_dofs = self.n_elems*basis.n_dof_per_center
-        center_dofs = np.arange(n_center_dofs)+len(vertex_to_dof)
-        center_dofs = center_dofs.reshape((self.n_elems,
-                                           basis.n_dof_per_center))
-        elem_to_dof[:,basis.center_dofs] = center_dofs
+        n_bubble_dofs = self.n_elems*basis.n_dof_per_bubble
+        bubble_dofs = np.arange(n_bubble_dofs)+len(vertex_to_dof)
+        bubble_dofs = bubble_dofs.reshape((self.n_elems,
+                                           basis.n_dof_per_bubble))
+        elem_to_dof[:,basis.bubble_dofs] = bubble_dofs
                                           
         self.boundary_dofs = vertex_to_dof[boundary_vertices]
         self.elem_to_dof   = elem_to_dof

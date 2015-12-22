@@ -22,7 +22,8 @@ class Basis1D(object):
 
 class LagrangeBasis1D(Basis1D):
     
-    def __init__(self, order):
+    def __init__(self, topo, order):
+        self.topo  = topo
         self.order = order
         self.q = order+1
         self.n_dofs = order+1
@@ -48,11 +49,11 @@ class LagrangeBasis1D(Basis1D):
         ids = np.arange(order+1, dtype=np.int)
         self.vertex_dofs = np.array([ids[0],ids[-1]],
                                     dtype=np.int)
-        self.center_dofs = ids[1:-1]
+        self.bubble_dofs = ids[1:-1]
         self.edge_dofs   = np.array([], dtype=np.int)
         self.face_dofs   = np.array([], dtype=np.int)
         self.n_dof_per_vertex  = 1
-        self.n_dof_per_center  = len(self.center_dofs)
+        self.n_dof_per_bubble  = len(self.bubble_dofs)
         self.n_vertex_per_elem = 2
         self.n_edge_per_elem   = 0
         self.n_face_per_elem   = 0
