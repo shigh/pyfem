@@ -20,6 +20,21 @@ class Basis1D(object):
         if do_ravel: return res.ravel()
         return res
 
+def lagrange_list(order):
+    
+    roots = np.linspace(-1, 1, order+1)
+    bp = []
+    flags = np.ones(order+1).astype(np.bool)
+    for i in range(order+1):
+        flags[:] = True
+        flags[i] = False
+        r = roots[flags]
+        c = np.prod(roots[i]-r)
+        p = np.poly1d(r, True)/c
+        bp.append(p)
+
+    return bp
+
 class LagrangeBasis1D(Basis1D):
     
     def __init__(self, topo, order):
