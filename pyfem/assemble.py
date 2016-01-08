@@ -6,7 +6,7 @@ def simple_assembly(mesh, Kloc):
 
     n_dofs = Kloc.shape[0]
     
-    sparse_guess = 8*mesh.n_elems*n_dofs
+    sparse_guess = 8*mesh.n_elems*n_dofs*2
     rows = np.zeros(sparse_guess, dtype=np.double)
     cols = np.zeros(sparse_guess, dtype=np.double)
     vals = np.zeros(sparse_guess, dtype=np.double)
@@ -18,8 +18,8 @@ def simple_assembly(mesh, Kloc):
             for j in range(n_dofs):
                 id1 = mesh.elem_to_dof[ielem, i]
                 id2 = mesh.elem_to_dof[ielem, j]
-                if not (id1 in mesh.boundary_dofs) or \
-                       (id2 in mesh.boundary_dofs):
+                if not ((id1 in mesh.boundary_dofs) or \
+                       (id2 in mesh.boundary_dofs)):
                     rows[ind] = id1
                     cols[ind] = id2
                     vals[ind] = Kelem[i,j]
