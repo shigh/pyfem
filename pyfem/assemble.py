@@ -13,7 +13,8 @@ def simple_assembly(mesh, Kloc):
 
     ind = 0
     for ielem in range(mesh.n_elems):
-        Kelem = Kloc*mesh.jacb_inv_det[ielem]
+        #Kelem = Kloc*mesh.jacb_inv_det[ielem]
+        Kelem = Kloc
         for i in range(n_dofs):
             for j in range(n_dofs):
                 id1 = mesh.elem_to_dof[ielem, i]

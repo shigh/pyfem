@@ -93,7 +93,7 @@ class Mesh2D(object):
         self.jacb     = topo.calc_jacb(vertices[elem_to_vertex])
         self.jacb_det = topo.calc_jacb_det(self.jacb)
         self.jacb_inv = topo.calc_jacb_inv(self.jacb)
-        self.jacb_inv_det = topo.calc_jacb_inv_det(self.jacb)
+        self.jacb_inv_det = topo.calc_jacb_inv_det(self.jacb_inv)
         
         elem_to_dof = np.zeros((self.n_elems, basis.n_dofs),
                                dtype=np.int)
