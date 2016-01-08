@@ -108,7 +108,11 @@ class SQuad(object):
                 
         return x, w
     
-    def ref_to_phys(self, nodes, jacb, ref):
+    def ref_to_phys(self, nodes, ref, jacb=None):
+
+        if jacb is None:
+            jacb = self.calc_jacb(nodes)
+
         b = nodes[:, 0, :]
         phys = np.zeros((nodes.shape[0],
                          ref.shape[0], 2),
