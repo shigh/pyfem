@@ -97,19 +97,51 @@ class Basis2D(object):
         assert ref.ndim==2
         assert ref.shape[1]==2
         
+        if d==0:
+            res = self._eval_ref_d0(coeffs, ref)
+            if do_ravel:
+                return res.ravel()
+        elif d==1:
+            res = self._eval_ref_d1(coeffs, ref)
+            if do_ravel:
+                return res.reshape((res.shape[1],
+                                    res.shape[2]))
+            
+        if do_ravel: return res.ravel()
+        return res
+
+    def _eval_ref_d0(self, coeffs, ref):
+        
         res = np.zeros((coeffs.shape[0], 
                         ref.shape[0]))
         
         x_ref = ref[:,0]
         y_ref = ref[:,1]
-        polys = self.basis_polys[d]    
+        polys = self.basis_polys[0]    
         for i in range(self.n_dofs):
             y = polys[i](x_ref, y_ref)
             res += coeffs[:,i].reshape((-1,1))*y
-            
-        if do_ravel: return res.ravel()
+
         return res
 
+    def _eval_ref_d1(self, coeffs, ref):
+        
+        res = np.zeros((coeffs.shape[0], 
+                        2,
+                        ref.shape[0]))
+        
+        x_ref = ref[:,0]
+        y_ref = ref[:,1]
+        polys = self.basis_polys[1]
+        for i in range(self.n_dofs):
+            dx = polys[i][0](x_ref, y_ref)
+            dy = polys[i][1](x_ref, y_ref)
+            c = coeffs[:,i].reshape((-1,1))
+            res[:,0,:] += c*dx
+            res[:,1,:] += c*dy
+
+        return res
+        
 
 class LagrangeBasisQuad(Basis2D):
     
