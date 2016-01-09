@@ -122,8 +122,18 @@ class Mesh2D(object):
         bbtd = basis.bubble_to_dof.ravel()
         elem_to_dof[:,bbtd] = bubble_to_dof
         self.bubble_to_dof = bubble_to_dof
-                                          
+
+        # Find edges on the boundary
+        boundary_edges = []
+        for iedge in range(self.n_edges):
+            edge = self.edge_to_vertex[iedge]
+            if (edge[0] in boundary_vertices) and\
+               (edge[1] in boundary_vertices):
+                boundary_edges.append(iedge)
+        boundary_edges = np.array(boundary_edges, dtype=np.int)
+        self.boundary_dofs = np.hstack([vertex_to_dof[boundary_vertices].ravel(),
+                                        edge_to_dof[boundary_edges].ravel()])
+
         assert np.max(elem_to_dof)==(self.n_dofs-1)
-        self.boundary_dofs = vertex_to_dof[boundary_vertices]
         self.elem_to_dof   = elem_to_dof
         
