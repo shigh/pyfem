@@ -89,15 +89,8 @@ class Mesh2D(object):
                         self.n_edges*basis.n_dof_per_edge+\
                         self.n_elems*basis.n_dof_per_bubble
         
-        # Calculate and save jacobian information
-        self.jacb     = topo.calc_jacb(vertices[elem_to_vertex])
-        self.jacb_det = topo.calc_jacb_det(self.jacb)
-        self.jacb_inv = topo.calc_jacb_inv(self.jacb)
-        self.jacb_inv_det = topo.calc_jacb_inv_det(self.jacb_inv)
-        
         elem_to_dof = np.zeros((self.n_elems, basis.n_dofs),
                                dtype=np.int)
-        
         
         # Vertex DOFs
         n_vertex_dofs = self.n_vertices*basis.n_dof_per_vertex

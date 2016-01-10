@@ -41,14 +41,17 @@ def simple_build_rhs(topo, basis, mesh, f):
     rhs = np.zeros(mesh.n_dofs, dtype=np.double)
     
     cub_points, cub_weights = topo.get_quadrature(basis.order+1)
-    quad_points = topo.ref_to_phys(mesh.vertices[mesh.elem_to_vertex],
-                                   cub_points)
+    etv = mesh.vertices[mesh.elem_to_vertex]
+    quad_points = topo.ref_to_phys(etv, cub_points)
     f_quad = f(quad_points)
     cub_vals = basis.eval_ref(np.eye(basis.n_dofs),
                               cub_points, d=0)
+    jacb     = topo.calc_jacb(etv)
+    jacb_det = topo.calc_jacb_det(jacb)
+
     a = f_quad.reshape((f_quad.shape[0],1,-1))*cub_vals
     a = a.dot(cub_weights)
-    a = a*mesh.jacb_det.reshape((-1,1))
+    a = a*jacb_det.reshape((-1,1))
 
     for ielem in range(mesh.n_elems):
         rhs[mesh.elem_to_dof[ielem]] += a[ielem]
