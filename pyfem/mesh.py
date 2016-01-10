@@ -129,4 +129,32 @@ class Mesh2D(object):
 
         assert np.max(elem_to_dof)==(self.n_dofs-1)
         self.elem_to_dof   = elem_to_dof
+
+def uniform_nodes_2d(n_elems, x_max, y_max):
+    
+    x_vals = np.linspace(0, x_max, n_elems+1)
+    y_vals = np.linspace(0, y_max, n_elems+1)
+
+    vertices = np.zeros(((n_elems+1)**2, 2), dtype=np.double)
+    elem_to_vertex = np.zeros((n_elems**2, 4), dtype=np.int)
+
+    for i in range(n_elems):
+        for j in range(n_elems):
+            elem = i*n_elems+j
+            elem_to_vertex[elem,0] = i*(n_elems+1)+j
+            elem_to_vertex[elem,1] = i*(n_elems+1)+j+1
+            elem_to_vertex[elem,2] = (i+1)*(n_elems+1)+j+1
+            elem_to_vertex[elem,3] = (i+1)*(n_elems+1)+j
+
+    boundary_vertices = []
+    for i in range(n_elems+1):
+        for j in range(n_elems+1):
+            v = i*(n_elems+1)+j
+            vertices[v,0] = x_vals[j]
+            vertices[v,1] = y_vals[i]
+            if (i==0) or (j==0) or\
+               (i==n_elems) or (j==n_elems):
+                boundary_vertices.append(v)
+                
+    return (vertices, elem_to_vertex, boundary_vertices)
         
