@@ -130,6 +130,20 @@ class Mesh2D(object):
         assert np.max(elem_to_dof)==(self.n_dofs-1)
         self.elem_to_dof   = elem_to_dof
 
+    def get_dof_phys(self):
+
+        topo, basis = self.topo, self.basis
+        nodes = self.vertices[self.elem_to_vertex]
+        phys  = topo.ref_to_phys(nodes, basis.dof_ref)
+
+        dof_phys = np.zeros((self.n_dofs, 2))
+        for ielem in range(self.n_elems):
+            for idof in range(self.basis.n_dofs):
+                dof = self.elem_to_dof[ielem, idof]
+                dof_phys[dof] = phys[ielem, idof]
+
+        return dof_phys
+
 def uniform_nodes_2d(n_elems, x_max, y_max):
     
     x_vals = np.linspace(0, x_max, n_elems+1)

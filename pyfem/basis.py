@@ -144,13 +144,16 @@ class Basis2D(object):
         
 
 class LagrangeBasisQuad(Basis2D):
-    
+
+    is_nodal = True
+
     def __init__(self, topo, order):
         self.topo  = topo
         self.order = order
         self.q = q = order+1
         self.n_dofs = (order+1)**2
 
+        roots = np.linspace(-1, 1, order+1)
         la   = lagrange_list(order)
         dla  = [l.deriv() for l in la]
         bp   = []
@@ -161,7 +164,8 @@ class LagrangeBasisQuad(Basis2D):
         edge_to_dof   = [[] for _ in 
                          range(topo.n_edges)]
         bubble_to_dof = []
-        
+        dof_ref = []
+
         ind = 0
         for iy in range(order+1):
             for ix in range(order+1):
@@ -174,6 +178,7 @@ class LagrangeBasisQuad(Basis2D):
                 dy = lambda x,y,lx=lx,dly=dly: lx(x)*dly(y)
                 bp.append(f)
                 bpd1.append([dx, dy])
+                dof_ref.append((roots[ix], roots[iy]))
 
                 if (iy==0):
                     if (ix==0):
@@ -217,3 +222,4 @@ class LagrangeBasisQuad(Basis2D):
         self.edge_to_dof   = np.array(edge_to_dof, dtype=np.int)
         self.vertex_to_dof = np.array(vertex_to_dof, dtype=np.int)
         self.bubble_to_dof = np.array(bubble_to_dof, dtype=np.int)
+        self.dof_ref       = np.array(dof_ref, dtype=np.double)
