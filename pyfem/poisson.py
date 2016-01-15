@@ -20,3 +20,23 @@ def poisson_2d_Kloc(basis, jacb_det, jacb_inv):
     Kloc = jacb_det*Kloc
 
     return Kloc
+
+def poisson_2d_Mloc(basis, jacb_det):
+
+    topo  = basis.topo
+    order = basis.order
+    cub_points, cub_weights = topo.get_quadrature(order+1)
+    Mloc = np.zeros((basis.n_dofs, basis.n_dofs),
+                    dtype=np.double)
+    cub_vals = basis.eval_ref(np.eye(basis.n_dofs),
+                              cub_points, d=0)
+
+    for i in range(basis.n_dofs):
+        for j in range(basis.n_dofs):
+            d1 = cub_vals[i]
+            d2 = cub_vals[j]
+            p = d1*d2
+            Mloc[i,j] = np.sum(p*cub_weights)
+    Mloc = jacb_det*Mloc
+
+    return Mloc
