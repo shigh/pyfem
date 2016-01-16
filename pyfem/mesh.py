@@ -171,4 +171,44 @@ def uniform_nodes_2d(n_elems, x_max, y_max):
                 boundary_vertices.append(v)
                 
     return (vertices, elem_to_vertex, boundary_vertices)
-        
+
+def uniform_nodes_3d(n_elems, x_max, y_max, z_max):
+    
+    x_vals = np.linspace(0, x_max, n_elems+1)
+    y_vals = np.linspace(0, y_max, n_elems+1)
+    z_vals = np.linspace(0, z_max, n_elems+1)
+
+    vertices = np.zeros(((n_elems+1)**3, 3), dtype=np.double)
+    elem_to_vertex = np.zeros((n_elems**3, 8), dtype=np.int)
+
+    nv = n_elems+1
+    for iz in range(n_elems):
+        for iy in range(n_elems):
+            for ix in range(n_elems):
+                elem = (iz*n_elems+iy)*n_elems+ix
+                c = iz*nv*nv
+                elem_to_vertex[elem,0] = c+iy*nv+ix
+                elem_to_vertex[elem,1] = c+iy*nv+ix+1
+                elem_to_vertex[elem,2] = c+(iy+1)*nv+ix+1
+                elem_to_vertex[elem,3] = c+(iy+1)*nv+ix
+                c = (iz+1)*nv*nv
+                elem_to_vertex[elem,4] = c+iy*nv+ix
+                elem_to_vertex[elem,5] = c+iy*nv+ix+1
+                elem_to_vertex[elem,6] = c+(iy+1)*nv+ix+1
+                elem_to_vertex[elem,7] = c+(iy+1)*nv+ix
+
+    boundary_vertices = []
+    for iz in range(nv):
+        for iy in range(nv):
+            for ix in range(nv):
+                v = (iz*nv+iy)*nv+ix
+                vertices[v,0] = x_vals[ix]
+                vertices[v,1] = y_vals[iy]
+                vertices[v,2] = z_vals[iz]
+                if (ix==0) or (iy==0) or (iz==0) or\
+                   (ix==n_elems) or (iy==n_elems) or (iz==n_elems):
+                    boundary_vertices.append(v)
+                
+    return (vertices, elem_to_vertex,
+            np.array(boundary_vertices, dtype=np.int))
+    
