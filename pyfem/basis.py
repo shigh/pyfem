@@ -223,3 +223,182 @@ class LagrangeBasisQuad(Basis2D):
         self.vertex_to_dof = np.array(vertex_to_dof, dtype=np.int)
         self.bubble_to_dof = np.array(bubble_to_dof, dtype=np.int)
         self.dof_ref       = np.array(dof_ref, dtype=np.double)
+
+
+class Basis3D(object):
+    
+    def eval_ref(self, coeffs, ref, d=0):
+        
+        do_ravel = coeffs.ndim==1
+        if do_ravel:
+            coeffs = coeffs.reshape((1,-1))
+        
+        assert ref.ndim==2
+        assert ref.shape[1]==3
+        
+        if d==0:
+            res = self._eval_ref_d0(coeffs, ref)
+            if do_ravel:
+                return res.ravel()
+        elif d==1:
+            res = self._eval_ref_d1(coeffs, ref)
+            if do_ravel:
+                return res.reshape((res.shape[1],
+                                    res.shape[2]))
+            
+        if do_ravel: return res.ravel()
+        return res
+
+    def _eval_ref_d0(self, coeffs, ref):
+        
+        res = np.zeros((coeffs.shape[0], 
+                        ref.shape[0]))
+        
+        x_ref = ref[:,0]
+        y_ref = ref[:,1]
+        z_ref = ref[:,2]
+        polys = self.basis_polys[0]    
+        for i in range(self.n_dofs):
+            y = polys[i](x_ref, y_ref, z_ref)
+            res += coeffs[:,i].reshape((-1,1))*y
+
+        return res
+
+    def _eval_ref_d1(self, coeffs, ref):
+        
+        res = np.zeros((coeffs.shape[0], 
+                        3,
+                        ref.shape[0]))
+        
+        x_ref = ref[:,0]
+        y_ref = ref[:,1]
+        z_ref = ref[:,2]
+        polys = self.basis_polys[1]
+        for i in range(self.n_dofs):
+            dx = polys[i][0](x_ref, y_ref, z_ref)
+            dy = polys[i][1](x_ref, y_ref, z_ref)
+            dz = polys[i][2](x_ref, y_ref, z_ref)
+            c = coeffs[:,i].reshape((-1,1))
+            res[:,0,:] += c*dx
+            res[:,1,:] += c*dy
+            res[:,2,:] += c*dz
+
+        return res
+        
+
+class LagrangeBasisHex(Basis3D):
+
+    is_nodal = True
+
+    def __init__(self, topo, order):
+        self.topo  = topo
+        self.order = order
+        self.q = q = order+1
+        self.n_dofs = (order+1)**3
+
+        roots = np.linspace(-1, 1, order+1)
+        la   = lagrange_list(order)
+        dla  = [l.deriv() for l in la]
+        bp   = []
+        bpd1 = []
+
+        n_dof_per_vertex = 1
+        n_dof_per_edge   = order-1
+        n_dof_per_face   = (order-1)**2
+        n_dof_per_bubble = (order-1)**3
+
+        assert n_dof_per_vertex*topo.n_vertices+\
+               n_dof_per_edge*topo.n_edges+\
+               n_dof_per_face*topo.n_faces+\
+               n_dof_per_bubble==self.n_dofs
+
+        dof_ref = []
+
+        ind = 0
+        for iz in range(order+1):
+            for iy in range(order+1):
+                for ix in range(order+1):
+                    lx = la[ix]
+                    ly = la[iy]
+                    lz = la[iz]
+                    dlx = dla[ix]
+                    dly = dla[iy]
+                    dlz = dla[iz]
+                    f  = lambda x,y,z,lx=lx,ly=ly,lz=lz:lx(x)*ly(y)*lz(z)
+                    dx = lambda x,y,z,dlx=dlx,ly=ly,lz=lz: dlx(x)*ly(y)*lz(z)
+                    dy = lambda x,y,z,lx=lx,dly=dly,lz=lz: lx(x)*dly(y)*lz(z)
+                    dz = lambda x,y,z,lx=lx,ly=ly,dlz=dlz: lx(x)*ly(y)*dlz(z)
+                    bp.append(f)
+                    bpd1.append([dx, dy, dz])
+                    dof_ref.append((roots[ix], roots[iy], roots[iz]))
+
+        vertex_to_dof = np.zeros((topo.n_vertices, n_dof_per_vertex),
+                                 dtype=np.int)
+        edge_to_dof   = np.zeros((topo.n_edges, n_dof_per_edge),
+                                 dtype=np.int)
+        face_to_dof   = np.zeros((topo.n_faces, n_dof_per_face),
+                                 dtype=np.int)
+        bubble_to_dof = np.zeros(n_dof_per_bubble,
+                                 dtype=np.int)
+
+        # Assign DOF mappings
+        nd = order+1
+        dofs = np.arange(nd**3, dtype=np.int).reshape((nd,nd,nd))
+
+        vertex_to_dof[0,0] = dofs[0,0,0]
+        vertex_to_dof[1,0] = dofs[0,0,-1]
+        vertex_to_dof[2,0] = dofs[0,-1,-1]
+        vertex_to_dof[3,0] = dofs[0,-1,0]
+        vertex_to_dof[4,0] = dofs[-1,0,0]
+        vertex_to_dof[5,0] = dofs[-1,0,-1]
+        vertex_to_dof[6,0] = dofs[-1,-1,-1]
+        vertex_to_dof[7,0] = dofs[-1,-1,0]
+
+        if n_dof_per_edge>0:
+            edge_to_dof[0,:]  = dofs[0,0,1:-1]
+            edge_to_dof[1,:]  = dofs[0,1:-1,-1]
+            edge_to_dof[2,:]  = dofs[0,-1,1:-1]
+            edge_to_dof[3,:]  = dofs[0,1:-1,0]
+            edge_to_dof[4,:]  = dofs[1:-1,0,0]
+            edge_to_dof[5,:]  = dofs[1:-1,0,-1]
+            edge_to_dof[6,:]  = dofs[1:-1,-1,-1]
+            edge_to_dof[7,:]  = dofs[1:-1,-1,0]
+            edge_to_dof[8,:]  = dofs[-1,0,1:-1]
+            edge_to_dof[9,:]  = dofs[-1,1:-1,-1]
+            edge_to_dof[10,:] = dofs[-1,-1,1:-1]
+            edge_to_dof[11,:] = dofs[-1,1:-1,0]
+
+        if n_dof_per_face>0:
+            face_to_dof[0,:] = dofs[1:-1,1:-1,0].ravel()
+            face_to_dof[1,:] = dofs[1:-1,1:-1,-1].ravel()
+            face_to_dof[2,:] = dofs[1:-1,0,1:-1].ravel()
+            face_to_dof[3,:] = dofs[1:-1,-1,1:-1].ravel()
+            face_to_dof[4,:] = dofs[0,1:-1,1:-1].ravel()
+            face_to_dof[5,:] = dofs[-1,1:-1,1:-1].ravel()
+
+        if n_dof_per_bubble>0:
+            bubble_to_dof[:] = dofs[1:-1,1:-1,1:-1].ravel()
+
+        self.vertex_to_dof = vertex_to_dof
+        self.edge_to_dof   = edge_to_dof
+        self.face_to_dof   = face_to_dof
+        self.bubble_to_dof = bubble_to_dof
+
+        dof_check = np.hstack([vertex_to_dof.ravel(),
+                               edge_to_dof.ravel(),
+                               face_to_dof.ravel(),
+                               bubble_to_dof.ravel()])
+        dofs = dofs.ravel()
+        assert len(dof_check)==len(dofs)
+        assert np.all(np.sort(dof_check)==dofs)
+
+        basis_polys = {}
+        basis_polys[0] = bp
+        basis_polys[1] = bpd1
+        self.basis_polys = basis_polys
+        
+        self.n_dof_per_vertex = n_dof_per_vertex
+        self.n_dof_per_edge   = n_dof_per_edge
+        self.n_dof_per_face   = n_dof_per_face
+        self.n_dof_per_bubble = n_dof_per_bubble
+        self.dof_ref = np.array(dof_ref, dtype=np.double)
