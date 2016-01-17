@@ -87,7 +87,9 @@ class LobattoBasis1D(Basis1D):
         self.n_face_per_elem   = 0
 
 class Basis2D(object):
-    
+
+    dim = 2
+
     def eval_ref(self, coeffs, ref, d=0):
         
         do_ravel = coeffs.ndim==1
@@ -226,7 +228,9 @@ class LagrangeBasisQuad(Basis2D):
 
 
 class Basis3D(object):
-    
+
+    dim = 3
+
     def eval_ref(self, coeffs, ref, d=0):
         
         do_ravel = coeffs.ndim==1

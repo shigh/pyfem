@@ -163,6 +163,7 @@ class Mesh2D(object):
                (edge[1] in boundary_vertices):
                 boundary_edges.append(iedge)
         boundary_edges = np.array(boundary_edges, dtype=np.int)
+
         # Find faces on the boundary
         boundary_faces = []
         for iface in range(self.n_faces):
@@ -188,7 +189,7 @@ class Mesh2D(object):
         nodes = self.vertices[self.elem_to_vertex]
         phys  = topo.ref_to_phys(nodes, basis.dof_ref)
 
-        dof_phys = np.zeros((self.n_dofs, 2))
+        dof_phys = np.zeros((self.n_dofs, basis.dim))
         for ielem in range(self.n_elems):
             for idof in range(self.basis.n_dofs):
                 dof = self.elem_to_dof[ielem, idof]
@@ -263,4 +264,3 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max):
                 
     return (vertices, elem_to_vertex,
             np.array(boundary_vertices, dtype=np.int))
-    
