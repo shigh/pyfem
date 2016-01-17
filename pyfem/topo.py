@@ -60,9 +60,17 @@ class SQuad(object):
                                [1,2],
                                [3,2],
                                [0,3]], dtype=np.int)
+
+    face_to_vertex = np.array([], dtype=np.int)
+    face_to_edge = np.array([], dtype=np.int)
+    
     n_vertices = 4
     n_edges    = 4
     n_vertex_per_edge = 2
+    n_faces           = 0
+    n_edge_per_face   = 0
+    n_vertex_per_face = 0
+
     
     def calc_jacb(self, nodes):
         assert nodes.ndim==3

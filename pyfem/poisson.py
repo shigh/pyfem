@@ -1,7 +1,7 @@
 
 import numpy as np
 
-def poisson_2d_Kloc(basis, jacb_det, jacb_inv):
+def poisson_Kloc(basis, jacb_det, jacb_inv):
 
     topo  = basis.topo
     order = basis.order
@@ -21,7 +21,7 @@ def poisson_2d_Kloc(basis, jacb_det, jacb_inv):
 
     return Kloc
 
-def poisson_2d_Mloc(basis, jacb_det):
+def poisson_Mloc(basis, jacb_det):
 
     topo  = basis.topo
     order = basis.order

@@ -89,6 +89,7 @@ class LobattoBasis1D(Basis1D):
 class Basis2D(object):
 
     dim = 2
+    n_dof_per_face = 0
 
     def eval_ref(self, coeffs, ref, d=0):
         
