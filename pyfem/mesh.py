@@ -79,18 +79,49 @@ class Mesh2D(object):
         self.elem_to_edge = elem_to_edge
         self.edge_to_vertex = edge_to_vertex
         self.edge_id = edge_id
+
+        # Build set of faces and face maps
+        elem_to_face = np.zeros((len(elem_to_vertex),
+                                 topo.n_faces), dtype=np.int)
+        face_id = {}
+        fid = 0
+        for ielem in range(len(elem_to_vertex)):
+            etv = elem_to_vertex[ielem]
+            elem_faces = etv[topo.face_to_vertex]
+            for iface in range(topo.n_faces):
+                face = elem_faces[iface]
+                face.sort()
+                t = tuple(face)
+                if not t in face_id:
+                    face_id[t] = fid
+                    fid += 1
+                elem_to_face[ielem, iface] = face_id[t]
+        
+        assert len(face_id)==fid
+        face_to_vertex = np.zeros((len(face_id), topo.n_vertex_per_face),
+                                  dtype=np.int)
+        for k, v in face_id.iteritems():
+            face_to_vertex[v, :] = k
+        assert np.all(face_to_vertex[:,0]<face_to_vertex[:,1])
+        assert np.all(face_to_vertex[:,1]<face_to_vertex[:,2])
+        assert np.all(face_to_vertex[:,2]<face_to_vertex[:,3])
+        self.elem_to_face = elem_to_face
+        self.face_to_vertex = face_to_vertex
+        self.face_id = face_id
         
         # Component and DOF counts
         self.n_elems    = len(elem_to_vertex)
         self.n_vertices = len(vertices)
         self.n_edges    = len(edge_id)
+        self.n_faces    = len(face_id)
         
         self.n_dofs   = self.n_vertices*basis.n_dof_per_vertex+\
                         self.n_edges*basis.n_dof_per_edge+\
+                        self.n_faces*basis.n_dof_per_face+\
                         self.n_elems*basis.n_dof_per_bubble
         
         elem_to_dof = np.zeros((self.n_elems, basis.n_dofs),
-                               dtype=np.int)
+                               dtype=np.int)-1
         
         # Vertex DOFs
         n_vertex_dofs = self.n_vertices*basis.n_dof_per_vertex
@@ -106,11 +137,19 @@ class Mesh2D(object):
         betd = basis.edge_to_dof.ravel()
         elem_to_dof[:,betd] = edge_to_dof[elem_to_edge].reshape((self.n_elems, -1))
         self.edge_to_dof = edge_to_dof
+
+        # Face DOFs
+        n_face_dofs = self.n_faces*basis.n_dof_per_face
+        face_dofs   = np.arange(n_face_dofs)+n_vertex_dofs+n_edge_dofs
+        face_to_dof = face_dofs.reshape((self.n_faces, -1))
+        bftd = basis.face_to_dof.ravel()
+        elem_to_dof[:,bftd] = face_to_dof[elem_to_face].reshape((self.n_elems, -1))
+        self.face_to_dof = face_to_dof
         
         # Bubble DOFs
         n_bubble_dofs = self.n_elems*basis.n_dof_per_bubble
         bubble_dofs = np.arange(n_bubble_dofs)+n_vertex_dofs\
-                                              +n_edge_dofs
+                      +n_edge_dofs+n_face_dofs
         bubble_to_dof = bubble_dofs.reshape((self.n_elems, -1))
         bbtd = basis.bubble_to_dof.ravel()
         elem_to_dof[:,bbtd] = bubble_to_dof
@@ -124,11 +163,24 @@ class Mesh2D(object):
                (edge[1] in boundary_vertices):
                 boundary_edges.append(iedge)
         boundary_edges = np.array(boundary_edges, dtype=np.int)
-        self.boundary_dofs = np.hstack([vertex_to_dof[boundary_vertices].ravel(),
-                                        edge_to_dof[boundary_edges].ravel()])
+        # Find faces on the boundary
+        boundary_faces = []
+        for iface in range(self.n_faces):
+            face = self.face_to_vertex[iface]
+            if (face[0] in boundary_vertices) and\
+               (face[1] in boundary_vertices) and\
+               (face[2] in boundary_vertices) and\
+               (face[3] in boundary_vertices):
+                boundary_faces.append(iface)
+        boundary_faces = np.array(boundary_faces, dtype=np.int)
 
+        self.boundary_dofs = np.hstack([vertex_to_dof[boundary_vertices].ravel(),
+                                        edge_to_dof[boundary_edges].ravel(),
+                                        face_to_dof[boundary_faces].ravel()])
+
+        assert np.all(elem_to_dof>=0)
         assert np.max(elem_to_dof)==(self.n_dofs-1)
-        self.elem_to_dof   = elem_to_dof
+        self.elem_to_dof = elem_to_dof
 
     def get_dof_phys(self):
 
