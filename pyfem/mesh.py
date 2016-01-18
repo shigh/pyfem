@@ -240,7 +240,7 @@ def uniform_nodes_2d(n_elems, x_max, y_max):
                 
     return (vertices, elem_to_vertex, boundary_vertices)
 
-def uniform_nodes_3d(n_elems, x_max, y_max, z_max):
+def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False):
     
     x_vals = np.linspace(0, x_max, n_elems+1)
     y_vals = np.linspace(0, y_max, n_elems+1)
@@ -276,6 +276,50 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max):
                 if (ix==0) or (iy==0) or (iz==0) or\
                    (ix==n_elems) or (iy==n_elems) or (iz==n_elems):
                     boundary_vertices.append(v)
-                
-    return (vertices, elem_to_vertex,
-            np.array(boundary_vertices, dtype=np.int))
+
+        # Return element and ref location in that element for a given
+        # set of points
+        def _get_elem_ref(phys):
+
+            Lx, Ly, Lz = x_max, y_max, z_max
+            nelx, nely, nelz = n_elems, n_elems, n_elems
+            hx, hy, hz = [a[1]-a[0] for a in
+                          (x_vals, y_vals, z_vals)]
+
+            x = np.array(phys[:,0], ndmin=1)
+            y = np.array(phys[:,1], ndmin=1)
+            z = np.array(phys[:,2], ndmin=1)
+            assert np.all(x>=0) and np.all(x<=Lx)
+            assert np.all(y>=0) and np.all(y<=Ly)
+            assert np.all(z>=0) and np.all(z<=Lz)
+
+            zelem = np.floor(z/hz).astype(np.int)
+            yelem = np.floor(y/hy).astype(np.int)
+            xelem = np.floor(x/hx).astype(np.int)
+            xelem[xelem==nelx] = nelx-1
+            yelem[yelem==nely] = nely-1
+            zelem[zelem==nelz] = nelz-1
+            elem = zelem*nely*nelx+yelem*nelx+xelem
+
+            assert np.max(xelem)<nelx
+            assert np.max(yelem)<nely
+            assert np.max(zelem)<nelz
+
+            xref = (x-xelem*hx)*2.0/hx-1.0
+            yref = (y-yelem*hy)*2.0/hy-1.0
+            zref = (z-zelem*hz)*2.0/hz-1.0
+
+            ref = np.zeros_like(phys)
+            ref[:,0] = xref
+            ref[:,1] = yref
+            ref[:,2] = zref
+            return (elem, ref)
+                    
+
+    if get_elem_ref:
+            return (vertices, elem_to_vertex,
+                    np.array(boundary_vertices, dtype=np.int),
+                    _get_elem_ref)
+    else:
+        return (vertices, elem_to_vertex,
+                np.array(boundary_vertices, dtype=np.int))
