@@ -205,6 +205,13 @@ class Mesh(object):
 
         return dof_phys
 
+    def eval_ref(self, b, ref, d=0):
+
+        assert (b.ndim==1) and (len(b)==self.n_dofs)
+        coeffs = b[self.elem_to_dof]
+        r = self.basis.eval_ref(coeffs, ref, d=d)
+        return r
+
 def uniform_nodes_2d(n_elems, x_max, y_max):
     
     x_vals = np.linspace(0, x_max, n_elems+1)
