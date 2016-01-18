@@ -6,7 +6,7 @@ import scipy.sparse as sps
 
 ctypedef np.float64_t FLOAT
 
-def simple_assembly(mesh, FLOAT[:,:] Kloc):
+def simple_assembly(mesh, FLOAT[:,:] Kloc, u_=None):
 
     cdef int n_dofs = Kloc.shape[0]
     
@@ -26,6 +26,13 @@ def simple_assembly(mesh, FLOAT[:,:] Kloc):
     
     s = set(mesh.boundary_dofs)
     on_bndy = lambda i:i in s
+
+    cdef np.ndarray[dtype=FLOAT,ndim=1] u = np.zeros(mesh.n_dofs,
+                                                     dtype=np.double)
+    if not (u_ is None):
+        u[:] = u_
+    cdef np.ndarray[dtype=FLOAT,ndim=1] b = np.zeros(mesh.n_dofs,
+                                                     dtype=np.double)
     
     cdef int n_elems = mesh.n_elems
     cdef int ind  = 0
@@ -50,6 +57,10 @@ def simple_assembly(mesh, FLOAT[:,:] Kloc):
                         vals_all.append(vals.copy())
                         iloc = 0
 
+                elif (id1!=id2):
+                    if on_bndy(id2):
+                        b[id1] -= u[id2]*Kloc[i,j]
+
     cdef int idof
     for idof in boundary_dofs:
         rows[iloc] = idof
@@ -72,6 +83,8 @@ def simple_assembly(mesh, FLOAT[:,:] Kloc):
     cols = np.hstack(cols_all)
     vals = np.hstack(vals_all)
     K = sps.coo_matrix((vals[:ind],(rows[:ind],cols[:ind])))
-    
-    return K.tocsr()
-    
+
+    if (u_ is None):
+        return K.tocsr()
+    else:
+        return (K.tocsr(), b)
