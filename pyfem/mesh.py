@@ -208,9 +208,27 @@ class Mesh(object):
     def eval_ref(self, b, ref, d=0):
 
         assert (b.ndim==1) and (len(b)==self.n_dofs)
+
         coeffs = b[self.elem_to_dof]
         r = self.basis.eval_ref(coeffs, ref, d=d)
+
         return r
+
+    def eval_elem_ref(self, b, elem, ref):
+
+        assert (b.ndim==1) and (len(b)==self.n_dofs)
+        assert len(elem)==len(ref)
+
+        res = np.zeros_like(elem, dtype=np.double)
+        for e in np.unique(elem):
+            coeffs = b[self.elem_to_dof[e]]
+            is_elem = elem==e
+            eref = ref[is_elem]
+            r = self.basis.eval_ref(coeffs, eref)
+            res[is_elem] = r
+
+        return res
+
 
 def uniform_nodes_2d(n_elems, x_max, y_max):
     
