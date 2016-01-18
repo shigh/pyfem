@@ -6,7 +6,7 @@ import scipy.sparse as sps
 
 ctypedef np.float64_t FLOAT
 
-def simple_assembly(mesh, FLOAT[:,:] Kloc, u_=None):
+def simple_assembly(mesh, FLOAT[:,:] Kloc, u_=None, has_boundary=True):
 
     cdef int n_dofs = Kloc.shape[0]
     
@@ -25,7 +25,10 @@ def simple_assembly(mesh, FLOAT[:,:] Kloc, u_=None):
     cdef long[:]   boundary_dofs = mesh.boundary_dofs
     
     s = set(mesh.boundary_dofs)
-    on_bndy = lambda i:i in s
+    if has_boundary:
+        on_bndy = lambda i:i in s
+    else:
+        on_bndy = lambda i:False
 
     cdef np.ndarray[dtype=FLOAT,ndim=1] u = np.zeros(mesh.n_dofs,
                                                      dtype=np.double)
@@ -62,18 +65,19 @@ def simple_assembly(mesh, FLOAT[:,:] Kloc, u_=None):
                         b[id1] -= u[id2]*Kloc[i,j]
 
     cdef int idof
-    for idof in boundary_dofs:
-        rows[iloc] = idof
-        cols[iloc] = idof
-        vals[iloc] = 1.0
-        iloc += 1
-        ind  += 1
+    if has_boundary:
+        for idof in boundary_dofs:
+            rows[iloc] = idof
+            cols[iloc] = idof
+            vals[iloc] = 1.0
+            iloc += 1
+            ind  += 1
 
-        if iloc==arr_size:
-            rows_all.append(rows.copy())
-            cols_all.append(cols.copy())
-            vals_all.append(vals.copy())
-            iloc = 0
+            if iloc==arr_size:
+                rows_all.append(rows.copy())
+                cols_all.append(cols.copy())
+                vals_all.append(vals.copy())
+                iloc = 0
 
     rows_all.append(rows.copy())
     cols_all.append(cols.copy())
