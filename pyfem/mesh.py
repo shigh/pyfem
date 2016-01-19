@@ -218,6 +218,7 @@ class Mesh(object):
 
         assert (b.ndim==1) and (len(b)==self.n_dofs)
         assert len(elem)==len(ref)
+        assert (ref.ndim==2) and (ref.shape[1]==self.basis.dim)
 
         res = np.zeros_like(elem, dtype=np.double)
         for e in np.unique(elem):
