@@ -231,7 +231,8 @@ class Mesh(object):
         return res
 
 
-def uniform_nodes_2d(n_elems, x_max, y_max):
+def uniform_nodes_2d(n_elems, x_max, y_max,
+                     get_elem_ref=False):
     
     x_vals = np.linspace(0, x_max, n_elems+1)
     y_vals = np.linspace(0, y_max, n_elems+1)
@@ -256,8 +257,45 @@ def uniform_nodes_2d(n_elems, x_max, y_max):
             if (i==0) or (j==0) or\
                (i==n_elems) or (j==n_elems):
                 boundary_vertices.append(v)
-                
-    return (vertices, elem_to_vertex, boundary_vertices)
+
+    # Return element and ref location in that element for a given
+    # set of points
+    def _get_elem_ref(phys):
+
+        Lx, Ly = x_max, y_max
+        nelx, nely = n_elems, n_elems
+        hx, hy = [a[1]-a[0] for a in
+                  (x_vals, y_vals)]
+
+        x = np.array(phys[:,0], ndmin=1)
+        y = np.array(phys[:,1], ndmin=1)
+        assert np.all(x>=0) and np.all(x<=Lx)
+        assert np.all(y>=0) and np.all(y<=Ly)
+
+        yelem = np.floor(y/hy).astype(np.int)
+        xelem = np.floor(x/hx).astype(np.int)
+        xelem[xelem==nelx] = nelx-1
+        yelem[yelem==nely] = nely-1
+        elem = yelem*nelx+xelem
+
+        assert np.max(xelem)<nelx
+        assert np.max(yelem)<nely
+
+        xref = (x-xelem*hx)*2.0/hx-1.0
+        yref = (y-yelem*hy)*2.0/hy-1.0
+
+        ref = np.zeros_like(phys)
+        ref[:,0] = xref
+        ref[:,1] = yref
+        return (elem, ref)
+
+    if get_elem_ref:
+        return (vertices, elem_to_vertex,
+                np.array(boundary_vertices, dtype=np.int),
+                _get_elem_ref)
+    else:
+        return (vertices, elem_to_vertex,
+                np.array(boundary_vertices, dtype=np.int))
 
 def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False):
     
