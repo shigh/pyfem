@@ -30,7 +30,7 @@ def legendre_list(order):
 
 def lobatto_list(order):
     
-    k_max = order+1
+    k_max = order
     x  = np.poly1d([1.0, 0.0])
     l0 = (1.0-x)/2.0
     l1 = (x+1.0)/2.0
