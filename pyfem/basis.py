@@ -228,6 +228,109 @@ class LagrangeBasisQuad(Basis2D):
         self.dof_ref       = np.array(dof_ref, dtype=np.double)
 
 
+class LobattoBasisQuad(Basis2D):
+
+    is_nodal = False
+
+    def __init__(self, topo, order):
+        self.topo  = topo
+        self.order = order
+
+        polys = lobatto_list(order)
+        l0 = polys[0]
+        l1 = polys[1]
+        lp = polys[2:]
+
+        dl0 = l0.deriv()
+        dl1 = l1.deriv()
+        dlp = [l.deriv() for l in lp]
+
+        n = len(lp)
+        n_dof_per_vertex = 1
+        n_dof_per_edge   = n
+        n_dof_per_bubble = n*n
+        n_dofs = n_dof_per_vertex*topo.n_vertices+\
+                 n_dof_per_edge*topo.n_edges+\
+                 n_dof_per_bubble
+
+        bp   = []
+        bpd1 = []
+
+        n_vertex_dofs = n_dof_per_vertex*topo.n_vertices
+        vertex_to_dof = np.arange(n_vertex_dofs, dtype=np.int)
+        vertex_to_dof = vertex_to_dof.reshape((topo.n_vertices,
+                                               n_dof_per_vertex))
+
+        bp.append(lambda x,y:l0(x)*l0(y))
+        bp.append(lambda x,y:l1(x)*l0(y))
+        bp.append(lambda x,y:l1(x)*l1(y))
+        bp.append(lambda x,y:l0(x)*l1(y))
+
+        bpd1.append([lambda x,y:dl0(x)*l0(y),
+                     lambda x,y:l0(x)*dl0(y)])
+        bpd1.append([lambda x,y:dl1(x)*l0(y),
+                     lambda x,y:l1(x)*dl0(y)])
+        bpd1.append([lambda x,y:dl1(x)*l1(y),
+                     lambda x,y:l1(x)*dl1(y)])
+        bpd1.append([lambda x,y:dl0(x)*l1(y),
+                     lambda x,y:l0(x)*dl1(y)])
+
+        n_edge_dofs = n_dof_per_edge*topo.n_edges
+        edge_to_dof = np.arange(n_edge_dofs, dtype=np.int)
+        edge_to_dof += n_vertex_dofs
+        edge_to_dof = edge_to_dof.reshape((n_dof_per_edge,
+                                           topo.n_edges)).T
+        for i in range(n):
+            lk  = lp[i]
+            dlk = dlp[i]
+
+            bp.append(lambda x,y,lk=lk:lk(x)*l0(y))
+            bp.append(lambda x,y,lk=lk:l1(x)*lk(y))
+            bp.append(lambda x,y,lk=lk:lk(x)*l1(y))
+            bp.append(lambda x,y,lk=lk:l0(x)*lk(y))
+
+            bpd1.append([lambda x,y,dlk=dlk:dlk(x)*l0(y),
+                         lambda x,y,lk=lk:lk(x)*dl0(y)])
+            bpd1.append([lambda x,y,lk=lk:dl1(x)*lk(y),
+                         lambda x,y,dlk=dlk:l1(x)*dlk(y)])
+            bpd1.append([lambda x,y,dlk=dlk:dlk(x)*l1(y),
+                         lambda x,y,lk=lk:lk(x)*dl1(y)])
+            bpd1.append([lambda x,y,lk=lk:dl0(x)*lk(y),
+                         lambda x,y,dlk=dlk:l0(x)*dlk(y)])
+
+        bubble_to_dof = np.arange(n_dof_per_bubble,
+                                  dtype=np.int)
+        bubble_to_dof += n_vertex_dofs+n_edge_dofs
+        for i in range(n):
+            for j in range(n):
+                lx = lp[j]
+                ly = lp[i]
+                f = lambda x,y,lx=lx,ly=ly:lx(x)*ly(y)
+                bp.append(f)
+
+                dlx = dlp[j]
+                dly = dlp[i]
+                df1 = lambda x,y,dlx=dlx,ly=ly:dlx(x)*ly(y)
+                df2 = lambda x,y,lx=lx,dly=dly:lx(x)*dly(y)
+                bpd1.append([df1, df2])
+
+        basis_polys = {}
+        basis_polys[0] = bp
+        basis_polys[1] = bpd1
+        self.basis_polys = basis_polys
+
+        assert bubble_to_dof[-1]==n_dofs-1
+
+        self.n_dof_per_vertex = n_dof_per_vertex
+        self.n_dof_per_edge   = n_dof_per_edge
+        self.n_dof_per_bubble = n_dof_per_bubble
+        self.n_dofs           = n_dofs
+
+        self.edge_to_dof   = edge_to_dof
+        self.vertex_to_dof = vertex_to_dof
+        self.bubble_to_dof = bubble_to_dof
+
+
 class Basis3D(object):
 
     dim = 3
