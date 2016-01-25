@@ -123,22 +123,15 @@ class Mesh(object):
                         self.n_faces*basis.n_dof_per_face+\
                         self.n_elems*basis.n_dof_per_bubble
         
-        elem_to_dof = np.zeros((self.n_elems, basis.n_dofs),
-                               dtype=np.int)-1
-        
         # Vertex DOFs
         n_vertex_dofs = self.n_vertices*basis.n_dof_per_vertex
         vertex_to_dof = np.arange(n_vertex_dofs)
-        bvtd = basis.vertex_to_dof.ravel()
-        elem_to_dof[:,bvtd] = vertex_to_dof[elem_to_vertex]
         self.vertex_to_dof = vertex_to_dof.reshape((self.n_vertices,-1))
         
         # Edge DOFs
         n_edge_dofs = self.n_edges*basis.n_dof_per_edge
         edge_dofs   = np.arange(n_edge_dofs)+n_vertex_dofs
         edge_to_dof = edge_dofs.reshape((self.n_edges, -1))
-        betd = basis.edge_to_dof.ravel()
-        elem_to_dof[:,betd] = edge_to_dof[elem_to_edge].reshape((self.n_elems, -1))
         self.edge_to_dof = edge_to_dof
 
         # Face DOFs
@@ -146,8 +139,6 @@ class Mesh(object):
         if has_faces:
             face_dofs   = np.arange(n_face_dofs)+n_vertex_dofs+n_edge_dofs
             face_to_dof = face_dofs.reshape((self.n_faces, -1))
-            bftd = basis.face_to_dof.ravel()
-            elem_to_dof[:,bftd] = face_to_dof[elem_to_face].reshape((self.n_elems, -1))
             self.face_to_dof = face_to_dof
         else:
             self.face_to_dof = np.array([], np.int)
@@ -157,9 +148,11 @@ class Mesh(object):
         bubble_dofs = np.arange(n_bubble_dofs)+n_vertex_dofs\
                       +n_edge_dofs+n_face_dofs
         bubble_to_dof = bubble_dofs.reshape((self.n_elems, -1))
-        bbtd = basis.bubble_to_dof.ravel()
-        elem_to_dof[:,bbtd] = bubble_to_dof
         self.bubble_to_dof = bubble_to_dof
+
+        # Build elem to dof map
+        self.build_elem_to_dof()
+        elem_to_dof = self.elem_to_dof
 
         # Find edges on the boundary
         boundary_edges = []
@@ -190,6 +183,37 @@ class Mesh(object):
         assert np.all(elem_to_dof>=0)
         assert np.max(elem_to_dof)==(self.n_dofs-1)
         self.elem_to_dof = elem_to_dof
+
+    def build_elem_to_dof(self):
+        """ Assumes vertex,edge and face maps exist
+        """
+
+        basis = self.basis
+        elem_to_dof = np.zeros((self.n_elems, basis.n_dofs),
+                                dtype=np.int)-1
+
+        vertex_to_dof = self.vertex_to_dof
+        elem_to_vertex = self.elem_to_vertex
+        bvtd = basis.vertex_to_dof.ravel()
+        elem_to_dof[:,bvtd] = vertex_to_dof[elem_to_vertex].reshape((self.n_elems, -1))
+
+        edge_to_dof = self.edge_to_dof
+        elem_to_edge = self.elem_to_edge
+        betd = basis.edge_to_dof.ravel()
+        elem_to_dof[:,betd] = edge_to_dof[elem_to_edge].reshape((self.n_elems, -1))
+
+        if basis.n_dof_per_face>0:
+            face_to_dof = self.face_to_dof
+            elem_to_face = self.elem_to_face
+            bftd = basis.face_to_dof.ravel()
+            elem_to_dof[:,bftd] = face_to_dof[elem_to_face].reshape((self.n_elems, -1))
+
+        bubble_to_dof = self.bubble_to_dof
+        bbtd = basis.bubble_to_dof.ravel()
+        elem_to_dof[:,bbtd] = bubble_to_dof
+
+        self.elem_to_dof = elem_to_dof
+
 
     def get_dof_phys(self):
 
