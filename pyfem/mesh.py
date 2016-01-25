@@ -292,6 +292,24 @@ def uniform_nodes_2d(n_elems, x_max, y_max,
             else:
                 vertex_map[v] = mv
 
+        i = n_elems-1
+        for j in range(n_elems):
+            v1 = (i+1)*(n_elems+1)+j
+            v2 = (i+1)*(n_elems+1)+j+1
+            edge  = (v1, v2)
+            medge = (j, j+1)
+            edge_map[edge] = medge
+
+        j = n_elems-1
+        for i in range(n_elems):
+            v1 = i*(n_elems+1)+j+1
+            v2 = (i+1)*(n_elems+1)+j+1
+            mv1 = i*(n_elems+1)
+            mv2 = (i+1)*(n_elems+1)
+            edge = (v1, v2)
+            medge = (mv1, mv2)
+            edge_map[edge] = medge
+
     boundary_vertices = []
     for i in range(n_elems+1):
         for j in range(n_elems+1):
@@ -338,7 +356,7 @@ def uniform_nodes_2d(n_elems, x_max, y_max,
     if get_elem_ref:
         ret.append(_get_elem_ref)
     if periodic:
-        ret.append(vertex_map)
+        ret.append((vertex_map, edge_map))
 
     return ret
 
