@@ -253,6 +253,7 @@ class Mesh(object):
 
         self.build_elem_to_dof()
         self.n_dofs = np.max(self.elem_to_dof)+1
+
     def get_dof_phys(self):
 
         topo, basis = self.topo, self.basis
@@ -398,7 +399,8 @@ def uniform_nodes_2d(n_elems, x_max, y_max,
 
     return ret
 
-def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False):
+def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False,
+                     periodic=False):
     
     x_vals = np.linspace(0, x_max, n_elems+1)
     y_vals = np.linspace(0, y_max, n_elems+1)
@@ -422,6 +424,46 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False):
                 elem_to_vertex[elem,5] = c+iy*nv+ix+1
                 elem_to_vertex[elem,6] = c+(iy+1)*nv+ix+1
                 elem_to_vertex[elem,7] = c+(iy+1)*nv+ix
+
+
+    vertex_map = {}
+    edge_map   = {}
+    face_map   = {}
+    if periodic:
+
+        ix = n_elems
+        for iz in range(n_elems+1):
+            for iy in range(n_elems+1):
+
+                c  = iz*nv*nv
+                v  = c+iy*nv+ix
+                mv = c+iy*nv
+                vertex_map[v] = mv
+
+        iy = n_elems
+        for iz in range(n_elems+1):
+            for ix in range(n_elems+1):
+
+                c  = iz*nv*nv
+                v  = c+iy*nv+ix
+                mv = c+ix
+                if mv in vertex_map:
+                    vertex_map[v] = vertex_map[mv]
+                else:
+                    vertex_map[v] = mv
+
+        iz = n_elems
+        for iy in range(n_elems+1):
+            for ix in range(n_elems+1):
+
+                c  = iz*nv*nv
+                v  = c+iy*nv+ix
+                mv = iy*nv+ix
+                if mv in vertex_map:
+                    vertex_map[v] = vertex_map[mv]
+                else:
+                    vertex_map[v] = mv
+                
 
     boundary_vertices = []
     for iz in range(nv):
@@ -474,10 +516,12 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False):
         return (elem, ref)
                     
 
+    ret = [vertices, elem_to_vertex,
+           np.array(boundary_vertices, dtype=np.int)]
+
     if get_elem_ref:
-            return (vertices, elem_to_vertex,
-                    np.array(boundary_vertices, dtype=np.int),
-                    _get_elem_ref)
-    else:
-        return (vertices, elem_to_vertex,
-                np.array(boundary_vertices, dtype=np.int))
+        ret.append(_get_elem_ref)
+    if periodic:
+        ret.append(vertex_map)
+
+    return tuple(ret)
