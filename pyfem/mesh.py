@@ -435,43 +435,43 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False):
                    (ix==n_elems) or (iy==n_elems) or (iz==n_elems):
                     boundary_vertices.append(v)
 
-        # Return element and ref location in that element for a given
-        # set of points
-        def _get_elem_ref(phys):
+    # Return element and ref location in that element for a given
+    # set of points
+    def _get_elem_ref(phys):
 
-            Lx, Ly, Lz = x_max, y_max, z_max
-            nelx, nely, nelz = n_elems, n_elems, n_elems
-            hx, hy, hz = [a[1]-a[0] for a in
-                          (x_vals, y_vals, z_vals)]
+        Lx, Ly, Lz = x_max, y_max, z_max
+        nelx, nely, nelz = n_elems, n_elems, n_elems
+        hx, hy, hz = [a[1]-a[0] for a in
+                      (x_vals, y_vals, z_vals)]
 
-            x = np.array(phys[:,0], ndmin=1)
-            y = np.array(phys[:,1], ndmin=1)
-            z = np.array(phys[:,2], ndmin=1)
-            assert np.all(x>=0) and np.all(x<=Lx)
-            assert np.all(y>=0) and np.all(y<=Ly)
-            assert np.all(z>=0) and np.all(z<=Lz)
+        x = np.array(phys[:,0], ndmin=1)
+        y = np.array(phys[:,1], ndmin=1)
+        z = np.array(phys[:,2], ndmin=1)
+        assert np.all(x>=0) and np.all(x<=Lx)
+        assert np.all(y>=0) and np.all(y<=Ly)
+        assert np.all(z>=0) and np.all(z<=Lz)
 
-            zelem = np.floor(z/hz).astype(np.int)
-            yelem = np.floor(y/hy).astype(np.int)
-            xelem = np.floor(x/hx).astype(np.int)
-            xelem[xelem==nelx] = nelx-1
-            yelem[yelem==nely] = nely-1
-            zelem[zelem==nelz] = nelz-1
-            elem = zelem*nely*nelx+yelem*nelx+xelem
+        zelem = np.floor(z/hz).astype(np.int)
+        yelem = np.floor(y/hy).astype(np.int)
+        xelem = np.floor(x/hx).astype(np.int)
+        xelem[xelem==nelx] = nelx-1
+        yelem[yelem==nely] = nely-1
+        zelem[zelem==nelz] = nelz-1
+        elem = zelem*nely*nelx+yelem*nelx+xelem
 
-            assert np.max(xelem)<nelx
-            assert np.max(yelem)<nely
-            assert np.max(zelem)<nelz
+        assert np.max(xelem)<nelx
+        assert np.max(yelem)<nely
+        assert np.max(zelem)<nelz
 
-            xref = (x-xelem*hx)*2.0/hx-1.0
-            yref = (y-yelem*hy)*2.0/hy-1.0
-            zref = (z-zelem*hz)*2.0/hz-1.0
+        xref = (x-xelem*hx)*2.0/hx-1.0
+        yref = (y-yelem*hy)*2.0/hy-1.0
+        zref = (z-zelem*hz)*2.0/hz-1.0
 
-            ref = np.zeros_like(phys)
-            ref[:,0] = xref
-            ref[:,1] = yref
-            ref[:,2] = zref
-            return (elem, ref)
+        ref = np.zeros_like(phys)
+        ref[:,0] = xref
+        ref[:,1] = yref
+        ref[:,2] = zref
+        return (elem, ref)
                     
 
     if get_elem_ref:
