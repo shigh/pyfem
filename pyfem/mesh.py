@@ -215,6 +215,44 @@ class Mesh(object):
         self.elem_to_dof = elem_to_dof
 
 
+    def apply_dof_maps(self, vertex_map={}, edge_map={}):
+
+        basis = self.basis
+
+        # Adjust vertex dofs
+        vtd = self.vertex_to_dof.copy()
+        for iv in range(self.n_vertices):
+            if iv in vertex_map:
+                vtd[iv] = vertex_map[iv]   
+
+        dofs = np.unique(vtd)
+        dmap = np.zeros(np.max(dofs)+1, dtype=np.int)-1
+        dmap[dofs] = np.arange(len(dofs))
+        self.vertex_to_dof = dmap[vtd]
+
+        # Adjust edge dofs
+        if basis.n_dof_per_edge>0:
+            etd = self.edge_to_dof.copy()
+            etd -= np.min(etd)
+
+            for k, v in edge_map.iteritems():
+                eid  = self.edge_id[k]
+                meid = self.edge_id[v]
+                etd[eid,:] = etd[meid,:]
+
+            dofs = np.unique(etd)
+            dmap = np.zeros(np.max(dofs)+1, dtype=np.int)-1
+            dmap[dofs] = np.arange(len(dofs))
+            self.edge_to_dof = dmap[etd]
+            self.edge_to_dof += np.max(self.vertex_to_dof)+1
+
+        # Adjust bubble dofs
+        if basis.n_dof_per_bubble>0:
+            self.bubble_to_dof -= np.min(self.bubble_to_dof)
+            self.bubble_to_dof += np.max(self.edge_to_dof)+1
+
+        self.build_elem_to_dof()
+        self.n_dofs = np.max(self.elem_to_dof)+1
     def get_dof_phys(self):
 
         topo, basis = self.topo, self.basis
