@@ -232,10 +232,14 @@ class Mesh(object):
 
 
 def uniform_nodes_2d(n_elems, x_max, y_max,
-                     get_elem_ref=False):
+                     get_elem_ref=False,
+                     periodic=False):
     
     x_vals = np.linspace(0, x_max, n_elems+1)
     y_vals = np.linspace(0, y_max, n_elems+1)
+
+    vertex_map = {}
+    edge_map   = {}
 
     vertices = np.zeros(((n_elems+1)**2, 2), dtype=np.double)
     elem_to_vertex = np.zeros((n_elems**2, 4), dtype=np.int)
@@ -247,6 +251,22 @@ def uniform_nodes_2d(n_elems, x_max, y_max,
             elem_to_vertex[elem,1] = i*(n_elems+1)+j+1
             elem_to_vertex[elem,2] = (i+1)*(n_elems+1)+j+1
             elem_to_vertex[elem,3] = (i+1)*(n_elems+1)+j
+
+    if periodic:
+        i = n_elems-1
+        for j in range(n_elems+1):
+            v  = (i+1)*(n_elems+1)+j
+            mv = j
+            vertex_map[v] = mv
+
+        j = n_elems-1
+        for i in range(n_elems+1):
+            v =  i*(n_elems+1)+j+1
+            mv = i*(n_elems+1)
+            if mv in vertex_map:
+                vertex_map[v] = vertex_map[mv]
+            else:
+                vertex_map[v] = mv
 
     boundary_vertices = []
     for i in range(n_elems+1):
@@ -289,13 +309,14 @@ def uniform_nodes_2d(n_elems, x_max, y_max,
         ref[:,1] = yref
         return (elem, ref)
 
+    ret = [vertices, elem_to_vertex,
+           np.array(boundary_vertices, dtype=np.int)]
     if get_elem_ref:
-        return (vertices, elem_to_vertex,
-                np.array(boundary_vertices, dtype=np.int),
-                _get_elem_ref)
-    else:
-        return (vertices, elem_to_vertex,
-                np.array(boundary_vertices, dtype=np.int))
+        ret.append(_get_elem_ref)
+    if periodic:
+        ret.append(vertex_map)
+
+    return ret
 
 def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False):
     
