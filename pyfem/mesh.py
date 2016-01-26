@@ -431,6 +431,7 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False,
     face_map   = {}
     if periodic:
 
+        # Far x maps
         ix = n_elems
         for iz in range(n_elems+1):
             for iy in range(n_elems+1):
@@ -440,6 +441,29 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False,
                 mv = c+iy*nv
                 vertex_map[v] = mv
 
+        for iz in range(n_elems+1):
+            for iy in range(n_elems):
+
+                c  = iz*nv*nv
+                v1  = c+iy*nv+ix
+                v2  = v1+nv
+                mv1 = c+iy*nv
+                mv2 = mv1+nv
+
+                edge_map[(v1,v2)] = (mv1, mv2)
+
+        for iy in range(n_elems+1):
+            for iz in range(n_elems):
+
+                c  = iz*nv*nv+iy*nv
+                v1  = c+ix
+                v2  = v1+nv*nv
+                mv1 = c
+                mv2 = mv1+nv*nv
+
+                edge_map[(v1,v2)] = (mv1, mv2)
+                
+        # Far y maps
         iy = n_elems
         for iz in range(n_elems+1):
             for ix in range(n_elems+1):
@@ -452,6 +476,37 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False,
                 else:
                     vertex_map[v] = mv
 
+        for iz in range(n_elems+1):
+            for ix in range(n_elems):
+
+                c  = iz*nv*nv
+                v1  = c+iy*nv+ix
+                v2  = v1+1
+                mv1 = c+ix
+                mv2 = mv1+1
+                v   = (v1, v2)
+                mv  = (mv1, mv2)
+                if mv in edge_map:
+                    edge_map[v] = edge_map[mv]
+                else:
+                    edge_map[v] = mv
+
+        for ix in range(n_elems+1):
+            for iz in range(n_elems):
+
+                c  = iz*nv*nv
+                v1  = c+iy*nv+ix
+                v2  = v1+nv*nv
+                mv1 = c+ix
+                mv2 = mv1+nv*nv
+                v   = (v1, v2)
+                mv  = (mv1, mv2)
+                if mv in edge_map:
+                    edge_map[v] = edge_map[mv]
+                else:
+                    edge_map[v] = mv
+
+        # Far z maps
         iz = n_elems
         for iy in range(n_elems+1):
             for ix in range(n_elems+1):
@@ -463,7 +518,36 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False,
                     vertex_map[v] = vertex_map[mv]
                 else:
                     vertex_map[v] = mv
-                
+
+        for iy in range(n_elems+1):
+            for ix in range(n_elems):
+
+                c  = iz*nv*nv
+                v1  = c+iy*nv+ix
+                v2  = v1+1
+                mv1 = iy*nv+ix
+                mv2 = mv1+1
+                v   = (v1, v2)
+                mv  = (mv1, mv2)
+                if mv in edge_map:
+                    edge_map[v] = edge_map[mv]
+                else:
+                    edge_map[v] = mv
+
+        for ix in range(n_elems+1):
+            for iy in range(n_elems):
+
+                c  = iz*nv*nv
+                v1  = c+iy*nv+ix
+                v2  = v1+nv
+                mv1 = iy*nv+ix
+                mv2 = mv1+nv
+                v   = (v1, v2)
+                mv  = (mv1, mv2)
+                if mv in edge_map:
+                    edge_map[v] = edge_map[mv]
+                else:
+                    edge_map[v] = mv
 
     boundary_vertices = []
     for iz in range(nv):
@@ -522,6 +606,6 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False,
     if get_elem_ref:
         ret.append(_get_elem_ref)
     if periodic:
-        ret.append(vertex_map)
+        ret.append((vertex_map, edge_map))
 
     return tuple(ret)
