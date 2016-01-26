@@ -215,7 +215,7 @@ class Mesh(object):
         self.elem_to_dof = elem_to_dof
 
 
-    def apply_dof_maps(self, vertex_map={}, edge_map={}):
+    def apply_dof_maps(self, vertex_map={}, edge_map={}, face_map={}):
 
         basis = self.basis
 
@@ -229,6 +229,7 @@ class Mesh(object):
         dmap = np.zeros(np.max(dofs)+1, dtype=np.int)-1
         dmap[dofs] = np.arange(len(dofs))
         self.vertex_to_dof = dmap[vtd]
+        next_dof = np.max(self.vertex_to_dof)+1
 
         # Adjust edge dofs
         if basis.n_dof_per_edge>0:
@@ -244,12 +245,30 @@ class Mesh(object):
             dmap = np.zeros(np.max(dofs)+1, dtype=np.int)-1
             dmap[dofs] = np.arange(len(dofs))
             self.edge_to_dof = dmap[etd]
-            self.edge_to_dof += np.max(self.vertex_to_dof)+1
+            self.edge_to_dof += next_dof
+            next_dof = np.max(self.edge_to_dof)+1
+
+        # Adjust face dofs
+        if basis.n_dof_per_face>0:
+            etd = self.face_to_dof.copy()
+            etd -= np.min(etd)
+
+            for k, v in face_map.iteritems():
+                eid  = self.face_id[k]
+                meid = self.face_id[v]
+                etd[eid,:] = etd[meid,:]
+
+            dofs = np.unique(etd)
+            dmap = np.zeros(np.max(dofs)+1, dtype=np.int)-1
+            dmap[dofs] = np.arange(len(dofs))
+            self.face_to_dof = dmap[etd]
+            self.face_to_dof += next_dof
+            next_dof = np.max(self.face_to_dof)+1
 
         # Adjust bubble dofs
         if basis.n_dof_per_bubble>0:
             self.bubble_to_dof -= np.min(self.bubble_to_dof)
-            self.bubble_to_dof += np.max(self.edge_to_dof)+1
+            self.bubble_to_dof += next_dof
 
         self.build_elem_to_dof()
         self.n_dofs = np.max(self.elem_to_dof)+1
@@ -462,6 +481,17 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False,
                 mv2 = mv1+nv*nv
 
                 edge_map[(v1,v2)] = (mv1, mv2)
+
+        for iz in range(n_elems):
+            for iy in range(n_elems):
+                c  = iz*nv*nv
+                v1 = c+iy*nv+ix
+                v2 = v1+nv
+                v3 = v1+nv*nv
+                v4 = v3+nv
+                v  = (v1, v2, v3, v4)
+                mv = tuple([l-ix for l in v])
+                face_map[v] = mv
                 
         # Far y maps
         iy = n_elems
@@ -506,6 +536,17 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False,
                 else:
                     edge_map[v] = mv
 
+        for iz in range(n_elems):
+            for ix in range(n_elems):
+                c  = iz*nv*nv
+                v1 = c+iy*nv+ix
+                v2 = v1+1
+                v3 = v1+nv*nv
+                v4 = v3+1
+                v  = (v1, v2, v3, v4)
+                mv = tuple([l-iy*nv for l in v])
+                face_map[v] = mv
+
         # Far z maps
         iz = n_elems
         for iy in range(n_elems+1):
@@ -548,6 +589,18 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False,
                     edge_map[v] = edge_map[mv]
                 else:
                     edge_map[v] = mv
+
+        for iy in range(n_elems):
+            for ix in range(n_elems):
+                c  = iz*nv*nv
+                v1 = c+iy*nv+ix
+                v2 = v1+1
+                v3 = v1+nv
+                v4 = v3+1
+                v  = (v1, v2, v3, v4)
+                mv = tuple([l-iz*nv*nv for l in v])
+                face_map[v] = mv
+                    
 
     boundary_vertices = []
     for iz in range(nv):
@@ -606,6 +659,6 @@ def uniform_nodes_3d(n_elems, x_max, y_max, z_max, get_elem_ref=False,
     if get_elem_ref:
         ret.append(_get_elem_ref)
     if periodic:
-        ret.append((vertex_map, edge_map))
+        ret.append((vertex_map, edge_map, face_map))
 
     return tuple(ret)
