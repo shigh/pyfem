@@ -221,9 +221,8 @@ class Mesh(object):
 
         # Adjust vertex dofs
         vtd = self.vertex_to_dof.copy()
-        for iv in range(self.n_vertices):
-            if iv in vertex_map:
-                vtd[iv] = vertex_map[iv]   
+        for k, v in vertex_map.iteritems():
+            vtd[k] = vtd[v]
 
         dofs = np.unique(vtd)
         dmap = np.zeros(np.max(dofs)+1, dtype=np.int)-1
