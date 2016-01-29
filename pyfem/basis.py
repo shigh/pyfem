@@ -415,10 +415,10 @@ class LagrangeBasisHex(Basis3D):
         n_dof_per_face   = (order-1)**2
         n_dof_per_bubble = (order-1)**3
 
-        assert n_dof_per_vertex*topo.n_vertices+\
-               n_dof_per_edge*topo.n_edges+\
-               n_dof_per_face*topo.n_faces+\
-               n_dof_per_bubble==self.n_dofs
+        assert (n_dof_per_vertex*topo.n_vertices+\
+                n_dof_per_edge*topo.n_edges+\
+                n_dof_per_face*topo.n_faces+\
+                n_dof_per_bubble)==self.n_dofs
 
         dof_ref = []
 
