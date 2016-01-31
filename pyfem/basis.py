@@ -130,8 +130,7 @@ class Basis2D(object):
     def _eval_ref_d1(self, coeffs, ref):
         
         res = np.zeros((coeffs.shape[0], 
-                        2,
-                        ref.shape[0]))
+                        ref.shape[0], 2))
         
         x_ref = ref[:,0]
         y_ref = ref[:,1]
@@ -140,8 +139,8 @@ class Basis2D(object):
             dx = polys[i][0](x_ref, y_ref)
             dy = polys[i][1](x_ref, y_ref)
             c = coeffs[:,i].reshape((-1,1))
-            res[:,0,:] += c*dx
-            res[:,1,:] += c*dy
+            res[:,:,0] += c*dx
+            res[:,:,1] += c*dy
 
         return res
         
@@ -375,8 +374,7 @@ class Basis3D(object):
     def _eval_ref_d1(self, coeffs, ref):
         
         res = np.zeros((coeffs.shape[0], 
-                        3,
-                        ref.shape[0]))
+                        ref.shape[0], 3))
         
         x_ref = ref[:,0]
         y_ref = ref[:,1]
@@ -387,9 +385,9 @@ class Basis3D(object):
             dy = polys[i][1](x_ref, y_ref, z_ref)
             dz = polys[i][2](x_ref, y_ref, z_ref)
             c = coeffs[:,i].reshape((-1,1))
-            res[:,0,:] += c*dx
-            res[:,1,:] += c*dy
-            res[:,2,:] += c*dz
+            res[:,:,0] += c*dx
+            res[:,:,1] += c*dy
+            res[:,:,2] += c*dz
 
         return res
         

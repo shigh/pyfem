@@ -13,8 +13,8 @@ def poisson_Kloc(basis, jacb_det, jacb_inv):
 
     for i in range(basis.n_dofs):
         for j in range(basis.n_dofs):
-            d1 = jacb_inv.T.dot(cub_vals[i])
-            d2 = jacb_inv.T.dot(cub_vals[j])
+            d1 = jacb_inv.T.dot(cub_vals[i].T)
+            d2 = jacb_inv.T.dot(cub_vals[j].T)
             p = d1*d2
             Kloc[i,j] = np.sum(p, axis=0).dot(cub_weights)
     Kloc = jacb_det*Kloc
@@ -33,8 +33,8 @@ def poisson_Mloc(basis, jacb_det):
 
     for i in range(basis.n_dofs):
         for j in range(basis.n_dofs):
-            d1 = cub_vals[i]
-            d2 = cub_vals[j]
+            d1 = cub_vals[i].T
+            d2 = cub_vals[j].T
             p = d1*d2
             Mloc[i,j] = np.sum(p*cub_weights)
     Mloc = jacb_det*Mloc
