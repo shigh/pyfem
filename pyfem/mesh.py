@@ -295,19 +295,24 @@ class Mesh(object):
 
         return r
 
-    def eval_elem_ref(self, b, elem, ref):
+    def eval_elem_ref(self, b, elem, ref, d=0):
 
         assert (b.ndim==1) and (len(b)==self.n_dofs)
         assert len(elem)==len(ref)
         assert (ref.ndim==2) and (ref.shape[1]==self.basis.dim)
 
-        res = np.zeros_like(elem, dtype=np.double)
+        if   d==0:
+            res = np.zeros_like(elem, dtype=np.double)
+        elif d==1:
+            res = np.zeros((len(elem), self.basis.dim),
+                           dtype=np.double)
+
         for e in np.unique(elem):
             coeffs = b[self.elem_to_dof[e]]
             is_elem = elem==e
             eref = ref[is_elem]
-            r = self.basis.eval_ref(coeffs, eref)
-            res[is_elem] = r
+            r = self.basis.eval_ref(coeffs, eref, d=d)
+            res[is_elem] = r.ravel()
 
         return res
 
