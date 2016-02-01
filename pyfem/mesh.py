@@ -272,6 +272,26 @@ class Mesh(object):
         self.build_elem_to_dof()
         self.n_dofs = np.max(self.elem_to_dof)+1
 
+    def reorder_dofs(self):
+
+        dmap = {}
+        etd = self.elem_to_dof
+        ind = 0
+        for ielem in range(self.n_elems):
+            for idof in range(etd.shape[1]):
+                dof = etd[ielem, idof]
+                if not (dof in dmap):
+                    dmap[dof] = ind
+                    ind += 1
+                etd[ielem, idof] = dmap[dof]
+        n_dofs = np.max(etd)+1
+        assert n_dofs==self.n_dofs
+
+        for idof in range(len(self.boundary_dofs)):
+            dof = self.boundary_dofs[idof]
+            if dof in dmap:
+                self.boundary_dofs[idof] = dmap[dof]
+
     def get_dof_phys(self):
 
         topo, basis = self.topo, self.basis
