@@ -332,7 +332,7 @@ class Mesh(object):
             is_elem = elem==e
             eref = ref[is_elem]
             r = self.basis.eval_ref(coeffs, eref, d=d)
-            res[is_elem] = r.ravel()
+            res[is_elem] = r
 
         return res
 
