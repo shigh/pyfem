@@ -80,7 +80,6 @@ def simple_build_rhs(topo, basis, mesh, f):
 
     for ielem in range(mesh.n_elems):
         rhs[mesh.elem_to_dof[ielem]] += a[ielem]
-    rhs = -rhs
     rhs[mesh.boundary_dofs] = 0.0
     
     return rhs
