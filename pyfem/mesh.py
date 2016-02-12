@@ -1,5 +1,6 @@
 
 import numpy as np
+from numpy import newaxis
 
 class Mesh1D(object):
     
@@ -327,12 +328,26 @@ class Mesh(object):
             res = np.zeros((len(elem), self.basis.dim),
                            dtype=np.double)
 
+        # for e in np.unique(elem):
+        #     coeffs = b[self.elem_to_dof[e]]
+        #     is_elem = elem==e
+        #     eref = ref[is_elem]
+        #     r = self.basis.eval_ref(coeffs, eref, d=d)
+        #     res[is_elem] = r
+        # res0 = res.copy()
+
+        n_basis_dofs = self.basis.n_dofs
+        r = self.basis.eval_ref(np.eye(n_basis_dofs), ref, d=d)
         for e in np.unique(elem):
-            coeffs = b[self.elem_to_dof[e]]
+            if d==1:
+                coeffs = b[self.elem_to_dof[e]][:,newaxis,newaxis]
+            else:
+                coeffs = b[self.elem_to_dof[e]][:,newaxis]
             is_elem = elem==e
-            eref = ref[is_elem]
-            r = self.basis.eval_ref(coeffs, eref, d=d)
-            res[is_elem] = r
+            tmp = coeffs*(r[:,is_elem])
+            res[is_elem] = np.sum(tmp, axis=0)
+
+        # assert np.max(np.abs(res-res0))<1e-12
 
         return res
 
