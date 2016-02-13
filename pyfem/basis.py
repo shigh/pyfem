@@ -508,3 +508,218 @@ class LagrangeBasisHex(Basis3D):
         self.n_dof_per_face   = n_dof_per_face
         self.n_dof_per_bubble = n_dof_per_bubble
         self.dof_ref = np.array(dof_ref, dtype=np.double)
+
+
+class LobattoBasisHex(Basis3D):
+
+    is_nodal = False
+
+    def __init__(self, topo, order):
+        self.topo  = topo
+        self.order = order
+
+        polys = lobatto_list(order)
+        l0 = polys[0]
+        l1 = polys[1]
+        lp = polys[2:]
+
+        dl0 = l0.deriv()
+        dl1 = l1.deriv()
+        dlp = [l.deriv() for l in lp]
+
+        n = len(lp)
+        n_dof_per_vertex = 1
+        n_dof_per_edge   = n
+        n_dof_per_face   = n*n
+        n_dof_per_bubble = n*n*n
+        n_dofs = n_dof_per_vertex*topo.n_vertices+\
+                 n_dof_per_edge*topo.n_edges+\
+                 n_dof_per_face*topo.n_faces+\
+                 n_dof_per_bubble
+
+        bp   = []
+        bpd1 = []
+
+        n_vertex_dofs = n_dof_per_vertex*topo.n_vertices
+        vertex_to_dof = np.arange(n_vertex_dofs, dtype=np.int)
+        vertex_to_dof = vertex_to_dof.reshape((topo.n_vertices,
+                                               n_dof_per_vertex))
+
+        bp.append(lambda x,y,z:l0(x)*l0(y)*l0(z))
+        bp.append(lambda x,y,z:l1(x)*l0(y)*l0(z))
+        bp.append(lambda x,y,z:l1(x)*l1(y)*l0(z))
+        bp.append(lambda x,y,z:l0(x)*l1(y)*l0(z))
+        bp.append(lambda x,y,z:l0(x)*l0(y)*l1(z))
+        bp.append(lambda x,y,z:l1(x)*l0(y)*l1(z))
+        bp.append(lambda x,y,z:l1(x)*l1(y)*l1(z))
+        bp.append(lambda x,y,z:l0(x)*l1(y)*l1(z))
+
+        bpd1.append([lambda x,y,z:dl0(x)*l0(y)*l0(z),
+                     lambda x,y,z:l0(x)*dl0(y)*l0(z),
+                     lambda x,y,z:l0(x)*l0(y)*dl0(z)])
+        bpd1.append([lambda x,y,z:dl1(x)*l0(y)*l0(z),
+                     lambda x,y,z:l1(x)*dl0(y)*l0(z),
+                     lambda x,y,z:l1(x)*l0(y)*dl0(z)])
+        bpd1.append([lambda x,y,z:dl1(x)*l1(y)*l0(z),
+                     lambda x,y,z:l1(x)*dl1(y)*l0(z),
+                     lambda x,y,z:l1(x)*l1(y)*dl0(z)])
+        bpd1.append([lambda x,y,z:dl0(x)*l1(y)*l0(z),
+                     lambda x,y,z:l0(x)*dl1(y)*l0(z),
+                     lambda x,y,z:l0(x)*l1(y)*dl0(z)])
+        bpd1.append([lambda x,y,z:dl0(x)*l0(y)*l1(z),
+                     lambda x,y,z:l0(x)*dl0(y)*l1(z),
+                     lambda x,y,z:l0(x)*l0(y)*dl1(z)])
+        bpd1.append([lambda x,y,z:dl1(x)*l0(y)*l1(z),
+                     lambda x,y,z:l1(x)*dl0(y)*l1(z),
+                     lambda x,y,z:l1(x)*l0(y)*dl1(z)])
+        bpd1.append([lambda x,y,z:dl1(x)*l1(y)*l1(z),
+                     lambda x,y,z:l1(x)*dl1(y)*l1(z),
+                     lambda x,y,z:l1(x)*l1(y)*dl1(z)])
+        bpd1.append([lambda x,y,z:dl0(x)*l1(y)*l1(z),
+                     lambda x,y,z:l0(x)*dl1(y)*l1(z),
+                     lambda x,y,z:l0(x)*l1(y)*dl1(z)])
+
+        n_edge_dofs = n_dof_per_edge*topo.n_edges
+        edge_to_dof = np.arange(n_edge_dofs, dtype=np.int)
+        edge_to_dof += n_vertex_dofs
+        edge_to_dof = edge_to_dof.reshape((n_dof_per_edge,
+                                           topo.n_edges)).T
+        for i in range(n):
+            
+            lk  = lp[i]
+            dlk = dlp[i]
+
+            bp.append(lambda x,y,z,lk=lk:lk(x)*l0(y)*l0(z))
+            bp.append(lambda x,y,z,lk=lk:l1(x)*lk(y)*l0(z))
+            bp.append(lambda x,y,z,lk=lk:lk(x)*l1(y)*l0(z))
+            bp.append(lambda x,y,z,lk=lk:l0(x)*lk(y)*l0(z))
+
+            bp.append(lambda x,y,z,lk=lk:l0(x)*l0(y)*lk(z))
+            bp.append(lambda x,y,z,lk=lk:l1(x)*l0(y)*lk(z))
+            bp.append(lambda x,y,z,lk=lk:l1(x)*l1(y)*lk(z))
+            bp.append(lambda x,y,z,lk=lk:l0(x)*l1(y)*lk(z))
+
+            bp.append(lambda x,y,z,lk=lk:lk(x)*l0(y)*l1(z))
+            bp.append(lambda x,y,z,lk=lk:l1(x)*lk(y)*l1(z))
+            bp.append(lambda x,y,z,lk=lk:lk(x)*l1(y)*l1(z))
+            bp.append(lambda x,y,z,lk=lk:l0(x)*lk(y)*l1(z))
+
+            bpd1.append([lambda x,y,z,dlk=dlk:dlk(x)*l0(y)*l0(z),
+                         lambda x,y,z,lk=lk:lk(x)*dl0(y)*l0(z),
+                         lambda x,y,z,lk=lk:lk(x)*l0(y)*dl0(z)])
+            bpd1.append([lambda x,y,z,lk=lk:dl1(x)*lk(y)*l0(z),
+                         lambda x,y,z,dlk=dlk:l1(x)*dlk(y)*l0(z),
+                         lambda x,y,z,lk=lk:l1(x)*lk(y)*dl0(z)])
+            bpd1.append([lambda x,y,z,dlk=dlk:dlk(x)*l1(y)*l0(z),
+                         lambda x,y,z,lk=lk:lk(x)*dl1(y)*l0(z),
+                         lambda x,y,z,lk=lk:lk(x)*l1(y)*dl0(z)])
+            bpd1.append([lambda x,y,z,lk=lk:dl0(x)*lk(y)*l0(z),
+                         lambda x,y,z,dlk=dlk:l0(x)*dlk(y)*l0(z),
+                         lambda x,y,z,lk=lk:l0(x)*lk(y)*dl0(z)])
+
+            bpd1.append([lambda x,y,z,lk=lk:dl0(x)*l0(y)*lk(z),
+                         lambda x,y,z,lk=lk:l0(x)*dl0(y)*lk(z),
+                         lambda x,y,z,dlk=dlk:l0(x)*l0(y)*dlk(z)])
+            bpd1.append([lambda x,y,z,lk=lk:dl1(x)*l0(y)*lk(z),
+                         lambda x,y,z,lk=lk:l1(x)*dl0(y)*lk(z),
+                         lambda x,y,z,dlk=dlk:l1(x)*l0(y)*dlk(z)])
+            bpd1.append([lambda x,y,z,lk=lk:dl1(x)*l1(y)*lk(z),
+                         lambda x,y,z,lk=lk:l1(x)*dl1(y)*lk(z),
+                         lambda x,y,z,dlk=dlk:l1(x)*l1(y)*dlk(z)])
+            bpd1.append([lambda x,y,z,lk=lk:dl0(x)*l1(y)*lk(z),
+                         lambda x,y,z,lk=lk:l0(x)*dl1(y)*lk(z),
+                         lambda x,y,z,dlk=dlk:l0(x)*l1(y)*dlk(z)])
+
+            bpd1.append([lambda x,y,z,dlk=dlk:dlk(x)*l0(y)*l1(z),
+                         lambda x,y,z,lk=lk:lk(x)*dl0(y)*l1(z),
+                         lambda x,y,z,lk=lk:lk(x)*l0(y)*dl1(z)])
+            bpd1.append([lambda x,y,z,lk=lk:dl1(x)*lk(y)*l1(z),
+                         lambda x,y,z,dlk=dlk:l1(x)*dlk(y)*l1(z),
+                         lambda x,y,z,lk=lk:l1(x)*lk(y)*dl1(z)])
+            bpd1.append([lambda x,y,z,dlk=dlk:dlk(x)*l1(y)*l1(z),
+                         lambda x,y,z,lk=lk:lk(x)*dl1(y)*l1(z),
+                         lambda x,y,z,lk=lk:lk(x)*l1(y)*dl1(z)])
+            bpd1.append([lambda x,y,z,lk=lk:dl0(x)*lk(y)*l1(z),
+                         lambda x,y,z,dlk=dlk:l0(x)*dlk(y)*l1(z),
+                         lambda x,y,z,lk=lk:l0(x)*lk(y)*dl1(z)])
+
+        n_face_dofs = n_dof_per_face*topo.n_faces
+        face_to_dof = np.arange(n_face_dofs, dtype=np.int)
+        face_to_dof += n_edge_dofs+n_vertex_dofs
+        face_to_dof = face_to_dof.reshape((n_dof_per_face,
+                                           topo.n_faces)).T
+        for i in range(n):
+            for j in range(n):
+
+                li  = lp[i]
+                lj  = lp[j]
+                dli = dlp[i]
+                dlj = dlp[j]
+
+                bp.append(lambda x,y,z,li=li,lj=lj:l0(x)*lj(y)*li(z))
+                bp.append(lambda x,y,z,li=li,lj=lj:l1(x)*lj(y)*li(z))
+                bp.append(lambda x,y,z,li=li,lj=lj:lj(x)*l0(y)*li(z))
+                bp.append(lambda x,y,z,li=li,lj=lj:lj(x)*l1(y)*li(z))
+                bp.append(lambda x,y,z,li=li,lj=lj:lj(x)*li(y)*l0(z))
+                bp.append(lambda x,y,z,li=li,lj=lj:lj(x)*li(y)*l1(z))
+
+                bpd1.append([lambda x,y,z,li=li,lj=lj:dl0(x)*lj(y)*li(z),
+                             lambda x,y,z,li=li,dlj=dlj:l0(x)*dlj(y)*li(z),
+                             lambda x,y,z,dli=dli,lj=lj:l0(x)*lj(y)*dli(z)])
+                bpd1.append([lambda x,y,z,li=li,lj=lj:dl1(x)*lj(y)*li(z),
+                             lambda x,y,z,li=li,dlj=dlj:l1(x)*dlj(y)*li(z),
+                             lambda x,y,z,dli=dli,lj=lj:l1(x)*lj(y)*dli(z)])
+                bpd1.append([lambda x,y,z,li=li,dlj=dlj:dlj(x)*l0(y)*li(z),
+                             lambda x,y,z,li=li,lj=lj:lj(x)*dl0(y)*li(z),
+                             lambda x,y,z,dli=dli,lj=lj:lj(x)*l0(y)*dli(z)])
+                bpd1.append([lambda x,y,z,li=li,dlj=dlj:dlj(x)*l1(y)*li(z),
+                             lambda x,y,z,li=li,lj=lj:lj(x)*dl1(y)*li(z),
+                             lambda x,y,z,dli=dli,lj=lj:lj(x)*l1(y)*dli(z)])
+                bpd1.append([lambda x,y,z,li=li,dlj=dlj:dlj(x)*li(y)*l0(z),
+                             lambda x,y,z,dli=dli,lj=lj:lj(x)*dli(y)*l0(z),
+                             lambda x,y,z,li=li,lj=lj:lj(x)*li(y)*dl0(z)])
+                bpd1.append([lambda x,y,z,li=li,dlj=dlj:dlj(x)*li(y)*l1(z),
+                             lambda x,y,z,dli=dli,lj=lj:lj(x)*dli(y)*l1(z),
+                             lambda x,y,z,li=li,lj=lj:lj(x)*li(y)*dl1(z)])
+                
+        bubble_to_dof = np.arange(n_dof_per_bubble,
+                                  dtype=np.int)
+        bubble_to_dof += n_vertex_dofs+n_edge_dofs+n_face_dofs
+        for iz in range(n):
+            for iy in range(n):
+                for ix in range(n):
+
+                    lx = lp[ix]
+                    ly = lp[iy]
+                    lz = lp[iz]
+                    f = lambda x,y,z,lx=lx,ly=ly,lz=lz:lx(x)*ly(y)*lz(z)
+                    bp.append(f)
+
+                    dlx = dlp[ix]
+                    dly = dlp[iy]
+                    dlz = dlp[iz]
+                    df1 = lambda x,y,z,dlx=dlx,ly=ly,lz=lz:dlx(x)*ly(y)*lz(z)
+                    df2 = lambda x,y,z,lx=lx,dly=dly,lz=lz:lx(x)*dly(y)*lz(z)
+                    df3 = lambda x,y,z,lx=lx,ly=ly,dlz=dlz:lx(x)*ly(y)*dlz(z)
+                    bpd1.append([df1, df2, df3])
+
+        basis_polys = {}
+        basis_polys[0] = bp
+        basis_polys[1] = bpd1
+        self.basis_polys = basis_polys
+
+        if n_dof_per_bubble>0:
+            assert bubble_to_dof[-1]==n_dofs-1
+        else:
+            assert vertex_to_dof[-1]==n_dofs-1
+
+        self.n_dof_per_vertex = n_dof_per_vertex
+        self.n_dof_per_edge   = n_dof_per_edge
+        self.n_dof_per_face   = n_dof_per_face
+        self.n_dof_per_bubble = n_dof_per_bubble
+        self.n_dofs           = n_dofs
+
+        self.edge_to_dof   = edge_to_dof
+        self.face_to_dof   = face_to_dof
+        self.vertex_to_dof = vertex_to_dof
+        self.bubble_to_dof = bubble_to_dof
