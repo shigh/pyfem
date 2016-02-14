@@ -2,7 +2,7 @@
 import numpy as np
 from scipy.special.orthogonal import p_roots
 
-class IntervalTopo1D(object):
+class Interval(object):
     
     interval = (-1.0, 1.0)
     h        = 2.0

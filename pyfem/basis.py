@@ -21,7 +21,7 @@ class Basis1D(object):
         if do_ravel: return res.ravel()
         return res
 
-class LagrangeBasis1D(Basis1D):
+class LagrangeBasisInterval(Basis1D):
     
     def __init__(self, topo, order):
         self.topo  = topo
@@ -59,7 +59,7 @@ class LagrangeBasis1D(Basis1D):
         self.n_edge_per_elem   = 0
         self.n_face_per_elem   = 0
 
-class LobattoBasis1D(Basis1D):
+class LobattoBasisInterval(Basis1D):
     
     def __init__(self, topo, order):
         self.topo  = topo
