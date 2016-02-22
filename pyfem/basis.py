@@ -58,6 +58,7 @@ class LagrangeBasisInterval(Basis1D):
         self.n_vertex_per_elem = 2
         self.n_edge_per_elem   = 0
         self.n_face_per_elem   = 0
+        self.dof_ref = roots
 
 class LobattoBasisInterval(Basis1D):
     
