@@ -403,6 +403,47 @@ class Basis3D(object):
             res[:,:,2] += c*dz
 
         return res
+
+    def _eval_d1(self, ref):
+        
+        res = np.zeros((self.n_dofs,
+                        ref.shape[0], 3))
+
+        poly  = self.basis_polys[0]
+        dpoly = self.basis_polys[1]
+        bp_inds = self.basis_poly_inds
+        refT  = ref.T
+        pref  = np.zeros((len(poly), 3, len(ref)))
+        dpref = np.zeros((len(dpoly), 3, len(ref)))
+        for i in range(len(poly)):
+            pref[i,:,:]  = poly[i](refT)
+            dpref[i,:,:] = dpoly[i](refT)
+        
+        for i in range(self.n_dofs):
+            ix, iy, iz = bp_inds[i]
+            res[i,:,0] = dpref[ix,0,:]*pref[iy,1,:]*pref[iz,2,:]
+            res[i,:,1] = pref[ix,0,:]*dpref[iy,1,:]*pref[iz,2,:]
+            res[i,:,2] = pref[ix,0,:]*pref[iy,1,:]*dpref[iz,2,:]
+
+        return res
+
+    def _eval_d0(self, ref):
+        
+        res = np.zeros((self.n_dofs,
+                        ref.shape[0]))
+
+        poly  = self.basis_polys[0]
+        bp_inds = self.basis_poly_inds
+        refT  = ref.T
+        pref  = np.zeros((len(poly), 3, len(ref)))
+        for i in range(len(poly)):
+            pref[i,:,:]  = poly[i](refT)
+        
+        for i in range(self.n_dofs):
+            ix, iy, iz = bp_inds[i]
+            res[i,:] = pref[ix,0,:]*pref[iy,1,:]*pref[iz,2,:]
+
+        return res
         
 
 class LagrangeBasisHex(Basis3D):
