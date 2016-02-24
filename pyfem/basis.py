@@ -540,12 +540,21 @@ class LobattoBasisHex(Basis3D):
 
         bp   = []
         bpd1 = []
+        basis_poly_inds = []
 
         n_vertex_dofs = n_dof_per_vertex*topo.n_vertices
         vertex_to_dof = np.arange(n_vertex_dofs, dtype=np.int)
         vertex_to_dof = vertex_to_dof.reshape((topo.n_vertices,
                                                n_dof_per_vertex))
 
+        basis_poly_inds += [(0,0,0),
+                            (1,0,0),
+                            (1,1,0),
+                            (0,1,0),
+                            (0,0,1),
+                            (1,0,1),
+                            (1,1,1),
+                            (0,1,1)]
         bp.append(lambda x,y,z:l0(x)*l0(y)*l0(z))
         bp.append(lambda x,y,z:l1(x)*l0(y)*l0(z))
         bp.append(lambda x,y,z:l1(x)*l1(y)*l0(z))
@@ -589,6 +598,19 @@ class LobattoBasisHex(Basis3D):
             
             lk  = lp[i]
             dlk = dlp[i]
+
+            basis_poly_inds += [(i+2,0,0),
+                                (1,i+2,0),
+                                (i+2,1,0),
+                                (0,i+2,0),
+                                (0,0,i+2),
+                                (1,0,i+2),
+                                (1,1,i+2),
+                                (0,1,i+2),
+                                (i+2,0,1),
+                                (1,i+2,1),
+                                (i+2,1,1),
+                                (0,i+2,1)]
 
             bp.append(lambda x,y,z,lk=lk:lk(x)*l0(y)*l0(z))
             bp.append(lambda x,y,z,lk=lk:l1(x)*lk(y)*l0(z))
@@ -657,6 +679,13 @@ class LobattoBasisHex(Basis3D):
                 dli = dlp[i]
                 dlj = dlp[j]
 
+                basis_poly_inds += [(0,j+2,i+2),
+                                    (1,j+2,i+2),
+                                    (j+2,0,i+2),
+                                    (j+2,1,i+2),
+                                    (j+2,i+2,0),
+                                    (j+2,i+2,1)]
+
                 bp.append(lambda x,y,z,li=li,lj=lj:l0(x)*lj(y)*li(z))
                 bp.append(lambda x,y,z,li=li,lj=lj:l1(x)*lj(y)*li(z))
                 bp.append(lambda x,y,z,li=li,lj=lj:lj(x)*l0(y)*li(z))
@@ -690,6 +719,8 @@ class LobattoBasisHex(Basis3D):
             for iy in range(n):
                 for ix in range(n):
 
+                    basis_poly_inds += [(ix+2,iy+2,iz+2)]
+
                     lx = lp[ix]
                     ly = lp[iy]
                     lz = lp[iz]
@@ -705,9 +736,10 @@ class LobattoBasisHex(Basis3D):
                     bpd1.append([df1, df2, df3])
 
         basis_polys = {}
-        basis_polys[0] = bp
-        basis_polys[1] = bpd1
+        basis_polys[0] = polys
+        basis_polys[1] = [p.deriv() for p in polys]
         self.basis_polys = basis_polys
+        self.basis_poly_inds = basis_poly_inds
 
         if n_dof_per_bubble>0:
             assert bubble_to_dof[-1]==n_dofs-1
