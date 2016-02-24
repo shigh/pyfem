@@ -361,13 +361,17 @@ class Basis3D(object):
         
         res = np.zeros((coeffs.shape[0], 
                         ref.shape[0]))
-        
-        x_ref = ref[:,0]
-        y_ref = ref[:,1]
-        z_ref = ref[:,2]
-        polys = self.basis_polys[0]    
+
+        la = self.la
+        bp_inds = self.basis_poly_inds
+        refT = ref.T
+        pref = np.zeros((len(la), 3, len(ref)))
+        for i in range(len(la)):
+            pref[i,:,:] = la[i](refT)
+
         for i in range(self.n_dofs):
-            y = polys[i](x_ref, y_ref, z_ref)
+            ix, iy, iz = bp_inds[i]
+            y = pref[ix,0,:]*pref[iy,1,:]*pref[iz,2,:]
             res += coeffs[:,i].reshape((-1,1))*y
 
         return res
@@ -376,15 +380,23 @@ class Basis3D(object):
         
         res = np.zeros((coeffs.shape[0], 
                         ref.shape[0], 3))
+
+        la  = self.la
+        dla = self.dla
+        bp_inds = self.basis_poly_inds
+        refT  = ref.T
+        pref  = np.zeros((len(la), 3, len(ref)))
+        dpref = np.zeros((len(la), 3, len(ref)))
+        for i in range(len(la)):
+            pref[i,:,:]  = la[i](refT)
+            dpref[i,:,:] = dla[i](refT)
         
-        x_ref = ref[:,0]
-        y_ref = ref[:,1]
-        z_ref = ref[:,2]
-        polys = self.basis_polys[1]
         for i in range(self.n_dofs):
-            dx = polys[i][0](x_ref, y_ref, z_ref)
-            dy = polys[i][1](x_ref, y_ref, z_ref)
-            dz = polys[i][2](x_ref, y_ref, z_ref)
+            ix, iy, iz = bp_inds[i]
+            dx = dpref[ix,0,:]*pref[iy,1,:]*pref[iz,2,:]
+            dy = pref[ix,0,:]*dpref[iy,1,:]*pref[iz,2,:]
+            dz = pref[ix,0,:]*pref[iy,1,:]*dpref[iz,2,:]
+
             c = coeffs[:,i].reshape((-1,1))
             res[:,:,0] += c*dx
             res[:,:,1] += c*dy
@@ -420,7 +432,7 @@ class LagrangeBasisHex(Basis3D):
                 n_dof_per_bubble)==self.n_dofs
 
         dof_ref = []
-
+        basis_poly_inds = []
         ind = 0
         for iz in range(order+1):
             for iy in range(order+1):
@@ -438,6 +450,7 @@ class LagrangeBasisHex(Basis3D):
                     bp.append(f)
                     bpd1.append([dx, dy, dz])
                     dof_ref.append((roots[ix], roots[iy], roots[iz]))
+                    basis_poly_inds.append((ix, iy, iz))
 
         vertex_to_dof = np.zeros((topo.n_vertices, n_dof_per_vertex),
                                  dtype=np.int)
@@ -503,7 +516,10 @@ class LagrangeBasisHex(Basis3D):
         basis_polys[0] = bp
         basis_polys[1] = bpd1
         self.basis_polys = basis_polys
-        
+        self.basis_poly_inds = basis_poly_inds
+        self.la  = la
+        self.dla = dla
+
         self.n_dof_per_vertex = n_dof_per_vertex
         self.n_dof_per_edge   = n_dof_per_edge
         self.n_dof_per_face   = n_dof_per_face
