@@ -118,12 +118,17 @@ class Basis2D(object):
         
         res = np.zeros((coeffs.shape[0], 
                         ref.shape[0]))
-        
-        x_ref = ref[:,0]
-        y_ref = ref[:,1]
-        polys = self.basis_polys[0]    
+
+        poly = self.basis_polys[0]
+        bp_inds = self.basis_poly_inds
+        refT = ref.T
+        pref = np.zeros((len(poly), 2, len(ref)))
+        for i in range(len(poly)):
+            pref[i,:,:] = poly[i](refT)
+
         for i in range(self.n_dofs):
-            y = polys[i](x_ref, y_ref)
+            ix, iy = bp_inds[i]
+            y = pref[ix,0,:]*pref[iy,1,:]
             res += coeffs[:,i].reshape((-1,1))*y
 
         return res
@@ -132,13 +137,22 @@ class Basis2D(object):
         
         res = np.zeros((coeffs.shape[0], 
                         ref.shape[0], 2))
+
+        poly  = self.basis_polys[0]
+        dpoly = self.basis_polys[1]
+        bp_inds = self.basis_poly_inds
+        refT  = ref.T
+        pref  = np.zeros((len(poly), 2, len(ref)))
+        dpref = np.zeros((len(dpoly), 2, len(ref)))
+        for i in range(len(poly)):
+            pref[i,:,:]  = poly[i](refT)
+            dpref[i,:,:] = dpoly[i](refT)
         
-        x_ref = ref[:,0]
-        y_ref = ref[:,1]
-        polys = self.basis_polys[1]
         for i in range(self.n_dofs):
-            dx = polys[i][0](x_ref, y_ref)
-            dy = polys[i][1](x_ref, y_ref)
+            ix, iy = bp_inds[i]
+            dx = dpref[ix,0,:]*pref[iy,1,:]
+            dy = pref[ix,0,:]*dpref[iy,1,:]
+
             c = coeffs[:,i].reshape((-1,1))
             res[:,:,0] += c*dx
             res[:,:,1] += c*dy
@@ -168,20 +182,13 @@ class LagrangeBasisQuad(Basis2D):
                          range(topo.n_edges)]
         bubble_to_dof = []
         dof_ref = []
+        basis_poly_inds = []
 
         ind = 0
         for iy in range(order+1):
             for ix in range(order+1):
-                lx = la[ix]
-                ly = la[iy]
-                dlx = dla[ix]
-                dly = dla[iy]
-                f  = lambda x,y,lx=lx,ly=ly:   lx(x)*ly(y)
-                dx = lambda x,y,dlx=dlx,ly=ly: dlx(x)*ly(y)
-                dy = lambda x,y,lx=lx,dly=dly: lx(x)*dly(y)
-                bp.append(f)
-                bpd1.append([dx, dy])
                 dof_ref.append((roots[ix], roots[iy]))
+                basis_poly_inds += [(ix, iy)]
 
                 if (iy==0):
                     if (ix==0):
@@ -207,9 +214,10 @@ class LagrangeBasisQuad(Basis2D):
                 ind +=1
         
         basis_polys = {}
-        basis_polys[0] = bp
-        basis_polys[1] = bpd1
+        basis_polys[0] = la
+        basis_polys[1] = dla
         self.basis_polys = basis_polys
+        self.basis_poly_inds = basis_poly_inds
         
         self.n_dof_per_vertex = 1
         self.n_dof_per_edge   = order-1
@@ -253,27 +261,17 @@ class LobattoBasisQuad(Basis2D):
                  n_dof_per_edge*topo.n_edges+\
                  n_dof_per_bubble
 
-        bp   = []
-        bpd1 = []
+        basis_poly_inds = []
 
         n_vertex_dofs = n_dof_per_vertex*topo.n_vertices
         vertex_to_dof = np.arange(n_vertex_dofs, dtype=np.int)
         vertex_to_dof = vertex_to_dof.reshape((topo.n_vertices,
                                                n_dof_per_vertex))
 
-        bp.append(lambda x,y:l0(x)*l0(y))
-        bp.append(lambda x,y:l1(x)*l0(y))
-        bp.append(lambda x,y:l1(x)*l1(y))
-        bp.append(lambda x,y:l0(x)*l1(y))
-
-        bpd1.append([lambda x,y:dl0(x)*l0(y),
-                     lambda x,y:l0(x)*dl0(y)])
-        bpd1.append([lambda x,y:dl1(x)*l0(y),
-                     lambda x,y:l1(x)*dl0(y)])
-        bpd1.append([lambda x,y:dl1(x)*l1(y),
-                     lambda x,y:l1(x)*dl1(y)])
-        bpd1.append([lambda x,y:dl0(x)*l1(y),
-                     lambda x,y:l0(x)*dl1(y)])
+        basis_poly_inds += [(0,0),
+                            (1,0),
+                            (1,1),
+                            (0,1)]
 
         n_edge_dofs = n_dof_per_edge*topo.n_edges
         edge_to_dof = np.arange(n_edge_dofs, dtype=np.int)
@@ -284,42 +282,26 @@ class LobattoBasisQuad(Basis2D):
             lk  = lp[i]
             dlk = dlp[i]
 
-            bp.append(lambda x,y,lk=lk:lk(x)*l0(y))
-            bp.append(lambda x,y,lk=lk:l1(x)*lk(y))
-            bp.append(lambda x,y,lk=lk:lk(x)*l1(y))
-            bp.append(lambda x,y,lk=lk:l0(x)*lk(y))
-
-            bpd1.append([lambda x,y,dlk=dlk:dlk(x)*l0(y),
-                         lambda x,y,lk=lk:lk(x)*dl0(y)])
-            bpd1.append([lambda x,y,lk=lk:dl1(x)*lk(y),
-                         lambda x,y,dlk=dlk:l1(x)*dlk(y)])
-            bpd1.append([lambda x,y,dlk=dlk:dlk(x)*l1(y),
-                         lambda x,y,lk=lk:lk(x)*dl1(y)])
-            bpd1.append([lambda x,y,lk=lk:dl0(x)*lk(y),
-                         lambda x,y,dlk=dlk:l0(x)*dlk(y)])
+            basis_poly_inds += [(i+2,0),
+                                (1,i+2),
+                                (i+2,1),
+                                (0,i+2)]
 
         bubble_to_dof = np.arange(n_dof_per_bubble,
                                   dtype=np.int)
         bubble_to_dof += n_vertex_dofs+n_edge_dofs
         for i in range(n):
             for j in range(n):
-                lx = lp[j]
-                ly = lp[i]
-                f = lambda x,y,lx=lx,ly=ly:lx(x)*ly(y)
-                bp.append(f)
-
-                dlx = dlp[j]
-                dly = dlp[i]
-                df1 = lambda x,y,dlx=dlx,ly=ly:dlx(x)*ly(y)
-                df2 = lambda x,y,lx=lx,dly=dly:lx(x)*dly(y)
-                bpd1.append([df1, df2])
+                basis_poly_inds += [(j+2,i+2)]
 
         basis_polys = {}
-        basis_polys[0] = bp
-        basis_polys[1] = bpd1
+        basis_polys[0] = polys
+        basis_polys[1] = [p.deriv() for p in polys]
         self.basis_polys = basis_polys
+        self.basis_poly_inds = basis_poly_inds
 
-        assert bubble_to_dof[-1]==n_dofs-1
+        if order>1:
+            assert bubble_to_dof[-1]==n_dofs-1
 
         self.n_dof_per_vertex = n_dof_per_vertex
         self.n_dof_per_edge   = n_dof_per_edge
