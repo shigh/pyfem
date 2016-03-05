@@ -69,10 +69,8 @@ class LobattoBasisInterval(Basis1D):
         self.n_dofs = order+1
 
         basis_polys = {}            
-        bp   = lobatto_list(order)
-        bpd1 = [b.deriv() for b in bp]
-        basis_polys[0] = bp
-        basis_polys[1] = bpd1
+        basis_polys[0] = lobatto_list(order)
+        basis_polys[1] = lobatto_list_d1(order)
         self.basis_polys = basis_polys
         
         ids = np.arange(order+1, dtype=np.int)
@@ -249,10 +247,6 @@ class LobattoBasisQuad(Basis2D):
         l1 = polys[1]
         lp = polys[2:]
 
-        dl0 = l0.deriv()
-        dl1 = l1.deriv()
-        dlp = [l.deriv() for l in lp]
-
         n = len(lp)
         n_dof_per_vertex = 1
         n_dof_per_edge   = n
@@ -279,8 +273,6 @@ class LobattoBasisQuad(Basis2D):
         edge_to_dof = edge_to_dof.reshape((n_dof_per_edge,
                                            topo.n_edges)).T
         for i in range(n):
-            lk  = lp[i]
-            dlk = dlp[i]
 
             basis_poly_inds += [(i+2,0),
                                 (1,i+2),
@@ -295,8 +287,8 @@ class LobattoBasisQuad(Basis2D):
                 basis_poly_inds += [(j+2,i+2)]
 
         basis_polys = {}
-        basis_polys[0] = polys
-        basis_polys[1] = [p.deriv() for p in polys]
+        basis_polys[0] = lobatto_list(order)
+        basis_polys[1] = lobatto_list_d1(order)
         self.basis_polys = basis_polys
         self.basis_poly_inds = basis_poly_inds
 
@@ -547,10 +539,6 @@ class LobattoBasisHex(Basis3D):
         l1 = polys[1]
         lp = polys[2:]
 
-        dl0 = l0.deriv()
-        dl1 = l1.deriv()
-        dlp = [l.deriv() for l in lp]
-
         n = len(lp)
         n_dof_per_vertex = 1
         n_dof_per_edge   = n
@@ -622,8 +610,8 @@ class LobattoBasisHex(Basis3D):
                     basis_poly_inds += [(ix+2,iy+2,iz+2)]
 
         basis_polys = {}
-        basis_polys[0] = polys
-        basis_polys[1] = [p.deriv() for p in polys]
+        basis_polys[0] = lobatto_list(order)
+        basis_polys[1] = lobatto_list_d1(order)
         self.basis_polys = basis_polys
         self.basis_poly_inds = basis_poly_inds
 
