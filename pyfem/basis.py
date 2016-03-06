@@ -23,13 +23,19 @@ class Basis1D(object):
 
 class LagrangeBasisInterval(Basis1D):
     
-    def __init__(self, topo, order):
+    def __init__(self, topo, order, roots="uniform"):
         self.topo  = topo
         self.order = order
         self.q = order+1
         self.n_dofs = order+1
 
-        roots = np.linspace(-1, 1, order+1)
+        if roots=="uniform":
+            roots = np.linspace(-1, 1, order+1)
+        elif roots=="gll":
+            roots = gll_points(order+1)[0]
+        else:
+            assert False
+
         basis_polys = {}
         bp = []
         bpd1 = []

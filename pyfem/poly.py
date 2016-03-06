@@ -2,9 +2,12 @@
 import numpy as np
 from scipy.special import j_roots, eval_legendre
 
-def lagrange_list(order):
-    
-    roots = np.linspace(-1, 1, order+1)
+def lagrange_list(order, roots=None):
+
+    if roots is None:
+        roots = np.linspace(-1, 1, order+1)
+    assert len(roots==order+1)
+
     bp = []
     flags = np.ones(order+1).astype(np.bool)
     for i in range(order+1):
