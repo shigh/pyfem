@@ -58,6 +58,13 @@ def lobatto_list_unstable(order):
     return lp
 
 def lobatto_list(order):
+    """List of lobatto polynomials
+
+    :param order: Highest polynomial order
+    :returns: List of polynomial functions
+    :rtype:
+
+    """
     
     x  = np.poly1d([1.0, 0.0])
     l0 = (1.0-x)/2.0
@@ -75,6 +82,13 @@ def lobatto_list(order):
     return lp
 
 def lobatto_list_d1(order):
+    """List of first derivative of lobatto polynomials
+
+    :param order: Highest polynomial order
+    :returns: List of polynomial functions
+    :rtype:
+
+    """
     
     lp = [lambda x:-.5+x*0,
           lambda x:+.5+x*0]
@@ -95,7 +109,9 @@ def gll_points(n):
     """
     
     assert n>=2
-    
+
+    # See Nodal Discontinuous Galerkin Methods Appendix A for x and
+    # the Mathworld page on Lobatto Quadrature for w
     x = j_roots(n-2, 1, 1)[0]
     L = eval_legendre(n-1, x)
     w1 = 2.0/(n*(n-1))
