@@ -110,6 +110,11 @@ def gll_points(n):
     
     assert n>=2
 
+    if n==2:
+        x = np.array([-1.0, 1.0])
+        w = np.array([ 1.0, 1.0])
+        return x, w
+
     # See Nodal Discontinuous Galerkin Methods Appendix A for x and
     # the Mathworld page on Lobatto Quadrature for w
     x = j_roots(n-2, 1, 1)[0]
