@@ -3,7 +3,7 @@ import numpy as np
 import scipy.sparse as sps
 
 from .poly import gll_points
-from .slow_lagrange import eval_dphi1d
+from .slow_lagrange import eval_dphi1d, eval_phi1d
 
 class SEMhat(object):
     
@@ -31,3 +31,16 @@ class SEMhat(object):
         # Convection operator
         Ch = Bh.dot(Dh)
         self.Ch = Ch
+
+    def interp_mat(self, x):
+        """Interpolation matrix from self.xgll to x
+
+        :param x: Points to interpolate to
+        :returns: Interpolation matrix
+        :rtype: np.ndarray
+
+        """
+
+        J = eval_phi1d(self.xgll, x)
+        return J.T
+
