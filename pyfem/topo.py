@@ -46,6 +46,92 @@ class Interval(object):
     def phys_to_ref(self, nodes, phys):
         pass
 
+class Triangle(object):
+    
+    interval = (-1.0, 1.0)
+    h        = 2.0
+    
+    vertices = np.array([[-1,-1],
+                         [-1,1],
+                         [-1,1]], dtype=np.double)
+    edge_to_vertex = np.array([[0,1],
+                               [1,2],
+                               [2,0]], dtype=np.int)
+
+    face_to_vertex = np.array([], dtype=np.int)
+    face_to_edge = np.array([], dtype=np.int)
+    
+    n_vertices = 3
+    n_edges    = 3
+    n_vertex_per_edge = 2
+    n_faces           = 0
+    n_edge_per_face   = 0
+    n_vertex_per_face = 0
+
+    
+    def calc_jacb(self, nodes):
+        assert nodes.ndim==3
+        
+        jacb = np.zeros((nodes.shape[0], 2, 2))
+        b = nodes[:,0,:]
+
+        jacb[:,0,1] = nodes[:,2,0]-b[:,0]
+        jacb[:,0,0] = nodes[:,1,0]-b[:,0]
+        jacb[:,1,1] = nodes[:,2,1]-b[:,1]
+        jacb[:,1,0] = nodes[:,1,1]-b[:,1]
+
+        return jacb/2.0
+        
+    def calc_jacb_det(self, jacb):
+        return np.linalg.det(jacb)
+    
+    def calc_jacb_inv(self, jacb):
+        det = np.linalg.det(jacb)
+        det = det.reshape((jacb.shape[0],1,1))
+        inv = np.zeros_like(jacb)
+        inv[:,0,0] =  jacb[:,1,1]
+        inv[:,1,1] =  jacb[:,0,0]
+        inv[:,0,1] = -jacb[:,0,1]
+        inv[:,1,0] = -jacb[:,1,0]
+        return inv/det
+    
+    def calc_jacb_inv_det(self, jacb_inv):
+        return np.linalg.det(jacb_inv)
+    
+    def get_quadrature(self, n):
+        xg, wg   = p_roots(n)
+        xg2, wg2 = p_roots(n+1)
+        x = np.zeros((n*(n+1), 2),
+                     dtype=np.double)
+        w = np.zeros(n*(n+1),
+                     dtype=np.double)
+        
+        for i in range(n+1):
+            for j in range(n):
+                p = i*n+j
+                x[p, 0] = xg[j]
+                x[p, 1] = xg2[i]
+                w[p]    = wg2[i]*wg[j]
+                
+        return x, w
+    
+    def ref_to_phys(self, nodes, ref, jacb=None):
+
+        if jacb is None:
+            jacb = self.calc_jacb(nodes)
+
+        b = nodes[:,0,:]
+
+        phys = np.zeros((nodes.shape[0],
+                         ref.shape[0], 2),
+                        dtype=np.double)
+        for i in range(nodes.shape[0]):
+            phys[i] = np.dot(jacb[i], ref.T+1).T+b[i]
+        
+        return phys
+    
+    def phys_to_ref(self, nodes, jacb_inv, phys):
+        assert False
 
 class SQuad(object):
     
