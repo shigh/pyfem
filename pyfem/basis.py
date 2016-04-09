@@ -368,8 +368,6 @@ class LagrangeBasisHex(Basis3D):
 
         roots = np.linspace(-1, 1, order+1)
         self.roots = roots
-        la   = lagrange_list(order)
-        dla  = [l.deriv() for l in la]
 
         n_dof_per_vertex = 1
         n_dof_per_edge   = order-1
@@ -450,10 +448,6 @@ class LagrangeBasisHex(Basis3D):
         assert len(dof_check)==len(dofs)
         assert np.all(np.sort(dof_check)==dofs)
 
-        basis_polys = {}
-        basis_polys[0] = la
-        basis_polys[1] = dla
-        self.basis_polys = basis_polys
         self.basis_poly_inds = basis_poly_inds
 
         self.n_dof_per_vertex = n_dof_per_vertex
