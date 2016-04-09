@@ -293,6 +293,16 @@ class LobattoBasisQuad(Basis2D):
         self.vertex_to_dof = vertex_to_dof
         self.bubble_to_dof = bubble_to_dof
 
+    def _eval_poly(self, ref, d=0):
+
+        polys = self.basis_polys[d]
+
+        r = np.zeros((len(polys), len(ref)))
+        for i in range(len(polys)):
+            r[i,:] = polys[i](ref)
+
+        return r
+
 
 class Basis3D(object):
 
@@ -564,3 +574,13 @@ class LobattoBasisHex(Basis3D):
         self.face_to_dof   = face_to_dof
         self.vertex_to_dof = vertex_to_dof
         self.bubble_to_dof = bubble_to_dof
+
+    def _eval_poly(self, ref, d=0):
+
+        polys = self.basis_polys[d]
+
+        r = np.zeros((len(polys), len(ref)))
+        for i in range(len(polys)):
+            r[i,:] = polys[i](ref)
+
+        return r
