@@ -114,7 +114,7 @@ class Basis2D(object):
         assert ref.ndim==2
 
         bp_inds = self.basis_poly_inds
-        pref = self._eval_poly(ref.T.ravel(), d=0)
+        pref = self.eval_poly(ref.T.ravel(), d=0)
         pref = pref.reshape((-1, 2, len(ref)))
         res  = np.zeros((self.n_dofs, len(ref)))
 
@@ -132,8 +132,8 @@ class Basis2D(object):
 
         bp_inds = self.basis_poly_inds
         refT  = ref.T
-        pref  = self._eval_poly(refT.ravel(), d=0)
-        dpref = self._eval_poly(refT.ravel(), d=1)
+        pref  = self.eval_poly(refT.ravel(), d=0)
+        dpref = self.eval_poly(refT.ravel(), d=1)
         pref  = pref.reshape((-1, 2, len(ref)))
         dpref = dpref.reshape((-1, 2, len(ref)))
         
@@ -215,7 +215,7 @@ class LagrangeBasisQuad(Basis2D):
         self.bubble_to_dof = np.array(bubble_to_dof, dtype=np.int)
         self.dof_ref       = np.array(dof_ref, dtype=np.double)
 
-    def _eval_poly(self, ref, d=0):
+    def eval_poly(self, ref, d=0):
 
         if   d==0:
             return eval_phi1d(self.roots, ref)
@@ -293,7 +293,7 @@ class LobattoBasisQuad(Basis2D):
         self.vertex_to_dof = vertex_to_dof
         self.bubble_to_dof = bubble_to_dof
 
-    def _eval_poly(self, ref, d=0):
+    def eval_poly(self, ref, d=0):
 
         polys = self.basis_polys[d]
 
@@ -323,7 +323,7 @@ class Basis3D(object):
     def _eval_ref_d0(self, ref):
 
         bp_inds = self.basis_poly_inds
-        pref = self._eval_poly(ref.T.ravel(), d=0)
+        pref = self.eval_poly(ref.T.ravel(), d=0)
         pref = pref.reshape((-1, 3, len(ref)))
         res  = np.zeros((self.n_dofs, len(ref)))
 
@@ -339,8 +339,8 @@ class Basis3D(object):
 
         bp_inds = self.basis_poly_inds
         refT  = ref.T
-        pref  = self._eval_poly(refT.ravel(), d=0)
-        dpref = self._eval_poly(refT.ravel(), d=1)
+        pref  = self.eval_poly(refT.ravel(), d=0)
+        dpref = self.eval_poly(refT.ravel(), d=1)
         pref  = pref.reshape((-1, 3, len(ref)))
         dpref = dpref.reshape((-1, 3, len(ref)))
         
@@ -462,7 +462,7 @@ class LagrangeBasisHex(Basis3D):
         self.n_dof_per_bubble = n_dof_per_bubble
         self.dof_ref = np.array(dof_ref, dtype=np.double)
 
-    def _eval_poly(self, ref, d=0):
+    def eval_poly(self, ref, d=0):
 
         if   d==0:
             return eval_phi1d(self.roots, ref)
@@ -575,7 +575,7 @@ class LobattoBasisHex(Basis3D):
         self.vertex_to_dof = vertex_to_dof
         self.bubble_to_dof = bubble_to_dof
 
-    def _eval_poly(self, ref, d=0):
+    def eval_poly(self, ref, d=0):
 
         polys = self.basis_polys[d]
 
