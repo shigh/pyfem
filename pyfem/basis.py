@@ -222,6 +222,7 @@ class LagrangeBasisQuad(Basis2D):
         elif d==1:
             return eval_dphi1d(self.roots, ref)
 
+
 class LobattoBasisQuad(Basis2D):
 
     is_nodal = False
@@ -297,116 +298,53 @@ class Basis3D(object):
 
     dim = 3
 
-    def eval_ref(self, coeffs, ref, d=0):
-        
-        do_ravel = coeffs.ndim==1
-        if do_ravel:
-            coeffs = coeffs.reshape((1,-1))
+    def eval_ref(self, ref, d=0):
         
         assert ref.ndim==2
         assert ref.shape[1]==3
         
         if d==0:
-            res = self._eval_ref_d0(coeffs, ref)
-            if do_ravel:
-                return res.ravel()
+            res = self._eval_ref_d0(ref)
         elif d==1:
-            res = self._eval_ref_d1(coeffs, ref)
-            if do_ravel:
-                return res.reshape((res.shape[1],
-                                    res.shape[2]))
-            
-        if do_ravel: return res.ravel()
+            res = self._eval_ref_d1(ref)
+
         return res
 
-    def _eval_ref_d0(self, coeffs, ref):
-        
-        res = np.zeros((coeffs.shape[0], 
-                        ref.shape[0]))
+    def _eval_ref_d0(self, ref):
 
-        poly = self.basis_polys[0]
         bp_inds = self.basis_poly_inds
-        refT = ref.T
-        pref = np.zeros((len(poly), 3, len(ref)))
-        for i in range(len(poly)):
-            pref[i,:,:] = poly[i](refT)
+        pref = self._eval_poly(ref.T.ravel(), d=0)
+        pref = pref.reshape((-1, 3, len(ref)))
+        res  = np.zeros((self.n_dofs, len(ref)))
 
         for i in range(self.n_dofs):
             ix, iy, iz = bp_inds[i]
-            y = pref[ix,0,:]*pref[iy,1,:]*pref[iz,2,:]
-            res += coeffs[:,i].reshape((-1,1))*y
+            res[i] = pref[ix,0]*pref[iy,1]*pref[iz,2]
 
         return res
 
-    def _eval_ref_d1(self, coeffs, ref):
-        
-        res = np.zeros((coeffs.shape[0], 
-                        ref.shape[0], 3))
+    def _eval_ref_d1(self, ref):
 
-        poly  = self.basis_polys[0]
-        dpoly = self.basis_polys[1]
+        res = np.zeros((self.n_dofs, len(ref), 3))
+
         bp_inds = self.basis_poly_inds
         refT  = ref.T
-        pref  = np.zeros((len(poly), 3, len(ref)))
-        dpref = np.zeros((len(dpoly), 3, len(ref)))
-        for i in range(len(poly)):
-            pref[i,:,:]  = poly[i](refT)
-            dpref[i,:,:] = dpoly[i](refT)
+        pref  = self._eval_poly(refT.ravel(), d=0)
+        dpref = self._eval_poly(refT.ravel(), d=1)
+        pref  = pref.reshape((-1, 3, len(ref)))
+        dpref = dpref.reshape((-1, 3, len(ref)))
         
         for i in range(self.n_dofs):
             ix, iy, iz = bp_inds[i]
-            dx = dpref[ix,0,:]*pref[iy,1,:]*pref[iz,2,:]
-            dy = pref[ix,0,:]*dpref[iy,1,:]*pref[iz,2,:]
-            dz = pref[ix,0,:]*pref[iy,1,:]*dpref[iz,2,:]
-
-            c = coeffs[:,i].reshape((-1,1))
-            res[:,:,0] += c*dx
-            res[:,:,1] += c*dy
-            res[:,:,2] += c*dz
+            dx = dpref[ix,0]*pref[iy,1]*pref[iz,2]
+            dy = pref[ix,0]*dpref[iy,1]*pref[iz,2]
+            dz = pref[ix,0]*pref[iy,1]*dpref[iz,2]
+            res[i,:,0] = dx
+            res[i,:,1] = dy
+            res[i,:,2] = dz
 
         return res
 
-    def _eval_d1(self, ref):
-        
-        res = np.zeros((self.n_dofs,
-                        ref.shape[0], 3))
-
-        poly  = self.basis_polys[0]
-        dpoly = self.basis_polys[1]
-        bp_inds = self.basis_poly_inds
-        refT  = ref.T
-        pref  = np.zeros((len(poly), 3, len(ref)))
-        dpref = np.zeros((len(dpoly), 3, len(ref)))
-        for i in range(len(poly)):
-            pref[i,:,:]  = poly[i](refT)
-            dpref[i,:,:] = dpoly[i](refT)
-        
-        for i in range(self.n_dofs):
-            ix, iy, iz = bp_inds[i]
-            res[i,:,0] = dpref[ix,0,:]*pref[iy,1,:]*pref[iz,2,:]
-            res[i,:,1] = pref[ix,0,:]*dpref[iy,1,:]*pref[iz,2,:]
-            res[i,:,2] = pref[ix,0,:]*pref[iy,1,:]*dpref[iz,2,:]
-
-        return res
-
-    def _eval_d0(self, ref):
-        
-        res = np.zeros((self.n_dofs,
-                        ref.shape[0]))
-
-        poly  = self.basis_polys[0]
-        bp_inds = self.basis_poly_inds
-        refT  = ref.T
-        pref  = np.zeros((len(poly), 3, len(ref)))
-        for i in range(len(poly)):
-            pref[i,:,:]  = poly[i](refT)
-        
-        for i in range(self.n_dofs):
-            ix, iy, iz = bp_inds[i]
-            res[i,:] = pref[ix,0,:]*pref[iy,1,:]*pref[iz,2,:]
-
-        return res
-        
 
 class LagrangeBasisHex(Basis3D):
 
@@ -419,6 +357,7 @@ class LagrangeBasisHex(Basis3D):
         self.n_dofs = (order+1)**3
 
         roots = np.linspace(-1, 1, order+1)
+        self.roots = roots
         la   = lagrange_list(order)
         dla  = [l.deriv() for l in la]
 
@@ -513,6 +452,13 @@ class LagrangeBasisHex(Basis3D):
         self.n_dof_per_bubble = n_dof_per_bubble
         self.dof_ref = np.array(dof_ref, dtype=np.double)
 
+    def _eval_poly(self, ref, d=0):
+
+        if   d==0:
+            return eval_phi1d(self.roots, ref)
+        elif d==1:
+            return eval_dphi1d(self.roots, ref)
+        
 
 class LobattoBasisHex(Basis3D):
 
