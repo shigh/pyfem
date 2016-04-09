@@ -8,8 +8,7 @@ def poisson_Kloc(basis, jacb_det, jacb_inv):
     cub_points, cub_weights = topo.get_quadrature(order+1)
     Kloc = np.zeros((basis.n_dofs, basis.n_dofs),
                     dtype=np.double)
-    cub_vals = basis.eval_ref(np.eye(basis.n_dofs),
-                              cub_points, d=1)
+    cub_vals = basis.eval_ref(cub_points, d=1)
 
     for i in range(basis.n_dofs):
         for j in range(basis.n_dofs):
@@ -28,8 +27,7 @@ def poisson_Mloc(basis, jacb_det):
     cub_points, cub_weights = topo.get_quadrature(order+1)
     Mloc = np.zeros((basis.n_dofs, basis.n_dofs),
                     dtype=np.double)
-    cub_vals = basis.eval_ref(np.eye(basis.n_dofs),
-                              cub_points, d=0)
+    cub_vals = basis.eval_ref(cub_points, d=0)
 
     for i in range(basis.n_dofs):
         for j in range(basis.n_dofs):

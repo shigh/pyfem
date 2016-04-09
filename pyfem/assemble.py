@@ -69,8 +69,7 @@ def simple_build_rhs(topo, basis, mesh, f):
     etv = mesh.vertices[mesh.elem_to_vertex]
     quad_points = topo.ref_to_phys(etv, cub_points)
     f_quad = f(quad_points)
-    cub_vals = basis.eval_ref(np.eye(basis.n_dofs),
-                              cub_points, d=0)
+    cub_vals = basis.eval_ref(cub_points, d=0)
     jacb     = topo.calc_jacb(etv)
     jacb_det = topo.calc_jacb_det(jacb)
 

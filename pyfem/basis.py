@@ -1,6 +1,7 @@
 
 import numpy as np
 from poly import *
+from lagrange import eval_phi1d, eval_dphi1d
 
 class Basis1D(object):
     
@@ -96,70 +97,52 @@ class Basis2D(object):
     dim = 2
     n_dof_per_face = 0
 
-    def eval_ref(self, coeffs, ref, d=0):
-        
-        do_ravel = coeffs.ndim==1
-        if do_ravel:
-            coeffs = coeffs.reshape((1,-1))
+    def eval_ref(self, ref, d=0):
         
         assert ref.ndim==2
         assert ref.shape[1]==2
         
         if d==0:
-            res = self._eval_ref_d0(coeffs, ref)
-            if do_ravel:
-                return res.ravel()
+            res = self._eval_ref_d0(ref)
         elif d==1:
-            res = self._eval_ref_d1(coeffs, ref)
-            if do_ravel:
-                return res.reshape((res.shape[1],
-                                    res.shape[2]))
-            
-        if do_ravel: return res.ravel()
+            res = self._eval_ref_d1(ref)
+
         return res
 
-    def _eval_ref_d0(self, coeffs, ref):
-        
-        res = np.zeros((coeffs.shape[0], 
-                        ref.shape[0]))
+    def _eval_ref_d0(self, ref):
 
-        poly = self.basis_polys[0]
+        assert ref.ndim==2
+
         bp_inds = self.basis_poly_inds
-        refT = ref.T
-        pref = np.zeros((len(poly), 2, len(ref)))
-        for i in range(len(poly)):
-            pref[i,:,:] = poly[i](refT)
+        pref = self._eval_poly(ref.T.ravel(), d=0)
+        pref = pref.reshape((-1, 2, len(ref)))
+        res  = np.zeros((self.n_dofs, len(ref)))
 
         for i in range(self.n_dofs):
             ix, iy = bp_inds[i]
-            y = pref[ix,0,:]*pref[iy,1,:]
-            res += coeffs[:,i].reshape((-1,1))*y
+            res[i] = pref[ix,0]*pref[iy,1]
 
         return res
 
-    def _eval_ref_d1(self, coeffs, ref):
-        
-        res = np.zeros((coeffs.shape[0], 
-                        ref.shape[0], 2))
+    def _eval_ref_d1(self, ref):
 
-        poly  = self.basis_polys[0]
-        dpoly = self.basis_polys[1]
+        assert ref.ndim==2
+
+        res = np.zeros((self.n_dofs, len(ref), 2))
+
         bp_inds = self.basis_poly_inds
         refT  = ref.T
-        pref  = np.zeros((len(poly), 2, len(ref)))
-        dpref = np.zeros((len(dpoly), 2, len(ref)))
-        for i in range(len(poly)):
-            pref[i,:,:]  = poly[i](refT)
-            dpref[i,:,:] = dpoly[i](refT)
+        pref  = self._eval_poly(refT.ravel(), d=0)
+        dpref = self._eval_poly(refT.ravel(), d=1)
+        pref  = pref.reshape((-1, 2, len(ref)))
+        dpref = dpref.reshape((-1, 2, len(ref)))
         
         for i in range(self.n_dofs):
             ix, iy = bp_inds[i]
-            dx = dpref[ix,0,:]*pref[iy,1,:]
-            dy = pref[ix,0,:]*dpref[iy,1,:]
-
-            c = coeffs[:,i].reshape((-1,1))
-            res[:,:,0] += c*dx
-            res[:,:,1] += c*dy
+            dx = dpref[ix,0]*pref[iy,1]
+            dy = pref[ix,0]*dpref[iy,1]
+            res[i,:,0] = dx
+            res[i,:,1] = dy
 
         return res
         
@@ -175,10 +158,7 @@ class LagrangeBasisQuad(Basis2D):
         self.n_dofs = (order+1)**2
 
         roots = np.linspace(-1, 1, order+1)
-        la   = lagrange_list(order)
-        dla  = [l.deriv() for l in la]
-        bp   = []
-        bpd1 = []
+        self.roots = roots
                 
         vertex_to_dof = [[] for _ in 
                          range(topo.n_vertices)]
@@ -217,10 +197,6 @@ class LagrangeBasisQuad(Basis2D):
                     
                 ind +=1
         
-        basis_polys = {}
-        basis_polys[0] = la
-        basis_polys[1] = dla
-        self.basis_polys = basis_polys
         self.basis_poly_inds = basis_poly_inds
         
         self.n_dof_per_vertex = 1
@@ -239,6 +215,12 @@ class LagrangeBasisQuad(Basis2D):
         self.bubble_to_dof = np.array(bubble_to_dof, dtype=np.int)
         self.dof_ref       = np.array(dof_ref, dtype=np.double)
 
+    def _eval_poly(self, ref, d=0):
+
+        if   d==0:
+            return eval_phi1d(self.roots, ref)
+        elif d==1:
+            return eval_dphi1d(self.roots, ref)
 
 class LobattoBasisQuad(Basis2D):
 
