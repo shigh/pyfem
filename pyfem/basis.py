@@ -218,9 +218,9 @@ class LagrangeBasisQuad(Basis2D):
     def eval_poly(self, ref, d=0):
 
         if   d==0:
-            return eval_phi1d(self.roots, ref)
+            return eval_lagrange_d0(self.roots, ref)
         elif d==1:
-            return eval_dphi1d(self.roots, ref)
+            return eval_lagrange_d1(self.roots, ref)
 
 
 class LobattoBasisQuad(Basis2D):
@@ -459,9 +459,9 @@ class LagrangeBasisHex(Basis3D):
     def eval_poly(self, ref, d=0):
 
         if   d==0:
-            return eval_phi1d(self.roots, ref)
+            return eval_lagrange_d0(self.roots, ref)
         elif d==1:
-            return eval_dphi1d(self.roots, ref)
+            return eval_lagrange_d1(self.roots, ref)
         
 
 class LobattoBasisHex(Basis3D):
