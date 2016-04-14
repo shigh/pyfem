@@ -3,7 +3,7 @@ import numpy as np
 import scipy.sparse as sps
 
 from .poly import gll_points
-from .slow_lagrange import eval_dphi1d, eval_phi1d
+from .poly import eval_lagrange_d0, eval_lagrange_d1
 
 class SEMhat(object):
     
@@ -20,7 +20,7 @@ class SEMhat(object):
         self.Bh = Bh
         
         # Derivative evaluation matrix
-        Dh = eval_dphi1d(xgll, xgll).T
+        Dh = eval_lagrange_d1(xgll, xgll).T
         self.Dh = Dh
         
         # Diffusion operator
@@ -41,6 +41,6 @@ class SEMhat(object):
 
         """
 
-        J = eval_phi1d(self.xgll, x)
+        J = eval_lagrange_d0(self.xgll, x)
         return J.T
 
