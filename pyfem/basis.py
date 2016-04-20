@@ -436,8 +436,9 @@ class LagrangeBasisHex(Basis3D):
         self.q = q = order+1
         self.n_dofs = (order+1)**3
 
-        roots = np.linspace(-1, 1, order+1)
-        la   = lagrange_list(order)
+        #roots = np.linspace(-1, 1, order+1)
+        roots = gll_points(order+1)[0]
+        la   = lagrange_list(order, roots=roots)
         dla  = [l.deriv() for l in la]
 
         n_dof_per_vertex = 1
